@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace MT.HexDump;
@@ -114,6 +115,15 @@ public class CharCollectionRow
 
 public static class HexDumper
 {
+    [Conditional("DEBUG")]
+    public static void DebugPrint(string msg, ConsoleColor foreground = ConsoleColor.Red)
+    {
+        var c = Console.ForegroundColor;
+        Console.ForegroundColor = foreground;
+        Console.Error.WriteLine(msg);
+        Console.ForegroundColor = c;
+    }
+
     public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data)
     {
         return HexDump(data, Encoding.UTF8);
