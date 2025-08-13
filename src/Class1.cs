@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Text;
 
 namespace MT.HexDump;
@@ -73,7 +72,6 @@ public struct CharData
 public class CharCollectionRow
 {
     internal CharData[] RowData = new CharData[16];
-    public int Count { get; } = 16;
 
     public bool IsEmpty = true;
 
