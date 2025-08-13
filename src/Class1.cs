@@ -45,6 +45,7 @@ public struct CharData
         : this(b, position, [])
     {
     }
+    /// <seealso href="https://github.com/PowerShell/PowerShell/blob/7fe5cb3e354eb775778944e5419cfbcb8fede735/src/Microsoft.PowerShell.ConsoleHost/host/msh/ConsoleControl.cs#L2785-L2806"/>
     internal static int LengthInBufferCells(char c)
     {
         // The following is based on http://www.cl.cam.ac.uk/~mgk25/c/wcwidth.c
