@@ -113,6 +113,42 @@ public class CharCollectionRow
     }
 }
 
+/// <summary>
+/// byte から char へのデコード処理時のフォールバック処理クラス。
+/// <para>
+/// Hexdump 処理において、別の文字へ置き換えや例外を飛ばしたくないため、無視させる。
+/// </para>
+/// </summary>
+internal class IgnoreFallback : DecoderFallback
+{
+    public override int MaxCharCount => 0;
+
+    public override DecoderFallbackBuffer CreateFallbackBuffer()
+    {
+        return new IgnoreFallbackBufer();
+    }
+    private class IgnoreFallbackBufer : DecoderFallbackBuffer
+    {
+        public override int Remaining => 0;
+
+        public override bool Fallback(byte[] bytesUnknown, int index)
+        {
+            HexDumper.DebugPrint($"Fallback: index={index} bytesUnknown=[{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
+            return false;
+        }
+
+        public override char GetNextChar()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool MovePrevious()
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
+
 public static class HexDumper
 {
     [Conditional("DEBUG")]
@@ -130,7 +166,7 @@ public static class HexDumper
     }
     public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding)
     {
-        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, DecoderFallback.ExceptionFallback);
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         CharCollectionRow charDatas = new();
         foreach (var charData in HexDumpCore(data, enc))
         {
@@ -151,57 +187,42 @@ public static class HexDumper
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
     {
         int p = 0;
+        int startPostion;
         while (p < data.Length)
         {
-            var bytes = data.Span.Slice(p, Math.Min(4, data.Length - p));
+            startPostion = p;
+            var bytes = data.Span.Slice(p, Math.Min(4, data.Length - p)).ToArray();
             char[] chars = new char[2];
-            int charsWritten;
-            byte[]? bytesUnknown = null;
-            try
-            {
-                enc.TryGetChars(bytes, chars, out charsWritten);
-            }
-            catch (DecoderFallbackException e)
-            {
-                bytesUnknown = e.BytesUnknown;
-                charsWritten = e.Index;
-            }
+            enc.TryGetChars(bytes, chars, out int charsWritten);
             if (bytes[0] == 0)
             {
-                yield return new CharData(bytes[0], p++);
+                yield return new CharData(bytes[0], p++, [(char)0]);
             }
             else if (chars[0] != default)
             {
                 if (char.IsSurrogatePair(chars[0], chars[1]))
                 {
-                    byte[] buf = bytes.ToArray();
-                    yield return new CharData(buf[0], p++, chars);
-                    for (var j = 1; j < buf.Length; j++)
+                    yield return new CharData(bytes[0], p++, chars);
+                    for (var j = 1; j < bytes.Length; j++)
                     {
-                        yield return new CharData(buf[j], p++);
+                        yield return new CharData(bytes[j], p++);
                     }
                 }
                 else
                 {
                     int byteCount = enc.GetByteCount(chars[..1]);
-                    byte[] buf = bytes.ToArray();
-                    yield return new CharData(buf[0], p++, chars[..1]);
+                    yield return new CharData(bytes[0], p++, chars[..1]);
                     for (var j = 1; j < byteCount; j++)
                     {
-                        yield return new CharData(buf[j], p++);
+                        yield return new CharData(bytes[j], p++);
                     }
                 }
             }
-            else if (bytesUnknown is not null)
+
+            if (p == startPostion)
             {
-                for (var i = 0; i < bytesUnknown.Length; i++)
-                {
-                    yield return new CharData(bytesUnknown[i], p++);
-                }
-            }
-            else
-            {
-                yield return new CharData(bytes[0], p++, (char[])[(char)bytes[0]]);
+                // 処理が1byteも進んでいない場合のフォールバック処理:
+                yield return new CharData(bytes[0], p++, [(char)bytes[0]]);
             }
         }
     }
