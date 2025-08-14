@@ -162,15 +162,15 @@ public static class HexDumper
         Console.ForegroundColor = c;
     }
 
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, long offset = 0)
     {
-        return HexDump(data, Encoding.UTF8);
+        return HexDump(data, Encoding.UTF8, offset);
     }
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding, long offset = 0)
     {
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         CharCollectionRow charDatas = new();
-        foreach (var charData in HexDumpCore(data, enc))
+        foreach (var charData in HexDumpCore(data, enc, offset))
         {
             var col = charData.Col;
             charDatas.Set(charData);
@@ -187,6 +187,7 @@ public static class HexDumper
     }
 
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
+    private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc, long offset = 0)
     {
         int p = 0;
         int startPostion;
@@ -198,25 +199,25 @@ public static class HexDumper
             enc.TryGetChars(bytes, chars, out int charsWritten);
             if (bytes[0] == 0)
             {
-                yield return new CharData(bytes[0], p++, [(char)0]);
+                yield return new CharData(bytes[0], offset + p++, [(char)0]);
             }
             else if (chars[0] != default)
             {
                 if (char.IsSurrogatePair(chars[0], chars[1]))
                 {
-                    yield return new CharData(bytes[0], p++, chars);
+                    yield return new CharData(bytes[0], offset + p++, chars);
                     for (var j = 1; j < bytes.Length; j++)
                     {
-                        yield return new CharData(bytes[j], p++);
+                        yield return new CharData(bytes[j], offset + p++);
                     }
                 }
                 else
                 {
                     int byteCount = enc.GetByteCount(chars[..1]);
-                    yield return new CharData(bytes[0], p++, chars[..1]);
+                    yield return new CharData(bytes[0], offset + p++, chars[..1]);
                     for (var j = 1; j < byteCount; j++)
                     {
-                        yield return new CharData(bytes[j], p++);
+                        yield return new CharData(bytes[j], offset + p++);
                     }
                 }
             }
@@ -224,7 +225,7 @@ public static class HexDumper
             if (p == startPostion)
             {
                 // 処理が1byteも進んでいない場合のフォールバック処理:
-                yield return new CharData(bytes[0], p++, [(char)bytes[0]]);
+                yield return new CharData(bytes[0], offset + p++, [(char)bytes[0]]);
             }
         }
     }
