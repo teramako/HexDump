@@ -74,12 +74,14 @@ public struct CharData
 public class CharCollectionRow
 {
     internal CharData[] RowData = new CharData[16];
+    private long _row;
 
     public bool IsEmpty = true;
 
     internal void Set(CharData data)
     {
         var col = data.Col;
+        _row = data.Row;
         RowData[col] = data;
         IsEmpty = false;
     }
@@ -92,7 +94,7 @@ public class CharCollectionRow
         }
     }
 
-    public string Row => $"0x{RowData[0].Row:X8}";
+    public string Row => $"0x{_row:X8}";
     public string Hex
     {
         get
