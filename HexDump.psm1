@@ -3,6 +3,7 @@ using namespace MT.HexDump;
 function Write-HexDump
 {
     [CmdletBinding()]
+    [Alias("hexdump")]
     [OutputType([MT.HexDump.CharCollectionRow])]
     param(
         [Parameter(ParameterSetName="Data", Mandatory, ValueFromPipeline)]
