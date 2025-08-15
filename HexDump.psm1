@@ -16,9 +16,11 @@ function Write-HexDump
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
         ,
         [Parameter()]
+        [ValidateRange(0, [long]::MaxValue)]
         [long] $Offset = 0
         ,
         [Parameter()]
+        [ValidateRange(0, [int]::MaxValue)]
         [int] $Length = 0
     )
 
