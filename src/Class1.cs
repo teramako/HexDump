@@ -123,7 +123,7 @@ public class CharCollectionRow
 /// </summary>
 internal class IgnoreFallback : DecoderFallback
 {
-    public override int MaxCharCount => 0;
+    public override int MaxCharCount => 1;
 
     public override DecoderFallbackBuffer CreateFallbackBuffer()
     {
@@ -131,17 +131,30 @@ internal class IgnoreFallback : DecoderFallback
     }
     private class IgnoreFallbackBufer : DecoderFallbackBuffer
     {
-        public override int Remaining => 0;
+        private byte _firstByte;
+        private int _remaining;
+        public override int Remaining => _remaining;
 
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
-            HexDumper.DebugPrint($"Fallback: index={index} bytesUnknown=[{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
+            if (index == 0)
+            {
+                HexDumper.DebugPrint($"Fallback: index={index} bytesUnknown=[{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
+                _firstByte = bytesUnknown[0];
+                _remaining = 1;
+                return true;
+            }
+            HexDumper.DebugPrint($"Ignore: index={index} bytesUnknown=[{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
             return false;
         }
 
         public override char GetNextChar()
         {
-            throw new NotImplementedException();
+            if (_remaining == 0)
+                return default;
+            _remaining = 0;
+            HexDumper.DebugPrint($"GetNextChar: {_firstByte}");
+            return (char)_firstByte;
         }
 
         public override bool MovePrevious()
@@ -208,6 +221,10 @@ public static class HexDumper
             if (bytes[0] == 0)
             {
                 yield return new CharData(bytes[0], offset + p++, [(char)0]);
+            }
+            else if (chars[0] <= 0xFF)
+            {
+                yield return new CharData(bytes[0], offset + p++, chars[..1]);
             }
             else if (chars[0] != default)
             {
