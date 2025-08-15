@@ -168,9 +168,17 @@ public static class HexDumper
     }
     public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding, long offset = 0)
     {
+        if (data.Length < offset)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Offset value too large for data length {data.Length}.");
+        }
+        if (offset > int.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Offset must be smaller than int ({int.MaxValue})");
+        }
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         CharCollectionRow charDatas = new();
-        foreach (var charData in HexDumpCore(data, enc, offset))
+        foreach (var charData in HexDumpCore(data.Slice((int)offset), enc, offset))
         {
             var col = charData.Col;
             charDatas.Set(charData);

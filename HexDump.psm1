@@ -14,13 +14,16 @@ function Write-HexDump
         ,
         [Parameter()]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
+        ,
+        [Parameter()]
+        [long] $Offset = 0
     )
 
     switch ($PSCmdlet.ParameterSetName)
     {
         'Data'
         {
-            Write-Output ([HexDumper]::HexDump($Data, $Encoding))
+            Write-Output ([HexDumper]::HexDump($Data, $Encoding, $Offset))
         }
         'Stream'
         {
