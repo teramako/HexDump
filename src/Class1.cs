@@ -5,45 +5,58 @@ namespace MT.HexDump;
 
 public struct CharData
 {
+    private long Position;
+    public int CodePoint;
     public byte B;
-    private int Position;
-    private char[] Chars;
     public bool Filled;
-    public int Row => Position & 0x7FFFFFF0;
-    public int Col => Position & 0x0000000F;
+    public long Row => Position & 0x7FFFFFF0;
+    public long Col => Position & 0x0000000F;
     public string DisplayString
     {
         get
         {
-            var str = new ReadOnlySpan<char>(Chars);
-            if (str.IsEmpty)
+            if (!Filled)
+                return "  ";
+            switch (CodePoint)
             {
-                return Filled ? ".." : "  ";
+                case < 0:
+                    return "..";
+                case < 0x20:
+                    return $"^{(char)(CodePoint + 0x40)}";
+                case < 0x7F:
+                    return $"{(char)CodePoint} ";
+                case 0x7F:
+                    return $"^{(char)(CodePoint - 0x40)}";
+                case <= 0x9F:
+                    return $"^{(char)(CodePoint + 0x40)}";
+                case <= 0xFF:
+                    return $"{(char)CodePoint} ";
+                default:
+                    var str = char.ConvertFromUtf32(CodePoint);
+                    if (char.IsSurrogatePair(str, 0))
+                    {
+                        return str;
+                    }
+                    else if (LengthInBufferCells(str[0]) == 2)
+                    {
+                        return str;
+                    }
+                    else
+                    {
+                        return $"{str} ";
+                    }
             }
-            if (Chars.Length == 2 && char.IsSurrogatePair(Chars[0], Chars[1]))
-            {
-                return str.ToString();
-            }
-            if (LengthInBufferCells(Chars[0]) == 2)
-            {
-                return str.ToString();
-            }
-            if (char.IsControl(str[0]))
-            {
-                return $"^{(char)(str[0] + 0x40)}";
-            }
-            return $"{str} ";
         }
     }
-    public CharData(byte b, int position, char[] chars)
+    public CharData(byte b, long position, int codePoint)
     {
         B = b;
         Position = position;
-        Chars = chars;
+        CodePoint = codePoint;
         Filled = true;
     }
-    public CharData(byte b, int position)
-        : this(b, position, [])
+    public CharData(byte b, long position)
+        : this(b, position, -1)
     {
     }
     /// <seealso href="https://github.com/PowerShell/PowerShell/blob/7fe5cb3e354eb775778944e5419cfbcb8fede735/src/Microsoft.PowerShell.ConsoleHost/host/msh/ConsoleControl.cs#L2785-L2806"/>
@@ -211,46 +224,31 @@ public static class HexDumper
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc, long offset = 0)
     {
         int p = 0;
-        int startPostion;
         while (p < data.Length)
         {
-            startPostion = p;
             var bytes = data.Span.Slice(p, Math.Min(4, data.Length - p)).ToArray();
             char[] chars = new char[2];
-            enc.TryGetChars(bytes, chars, out int charsWritten);
-            if (bytes[0] == 0)
+            enc.TryGetChars(bytes, chars, out _);
+            if (chars[0] <= 0xFF)
             {
-                yield return new CharData(bytes[0], offset + p++, [(char)0]);
+                yield return new CharData(bytes[0], offset + p++, (int)chars[0]);
             }
-            else if (chars[0] <= 0xFF)
+            else if (char.IsSurrogatePair(chars[0], chars[1]))
             {
-                yield return new CharData(bytes[0], offset + p++, chars[..1]);
-            }
-            else if (chars[0] != default)
-            {
-                if (char.IsSurrogatePair(chars[0], chars[1]))
+                yield return new CharData(bytes[0], offset + p++, char.ConvertToUtf32(chars[0], chars[1]));
+                for (var j = 1; j < bytes.Length; j++)
                 {
-                    yield return new CharData(bytes[0], offset + p++, chars);
-                    for (var j = 1; j < bytes.Length; j++)
-                    {
-                        yield return new CharData(bytes[j], offset + p++);
-                    }
-                }
-                else
-                {
-                    int byteCount = enc.GetByteCount(chars[..1]);
-                    yield return new CharData(bytes[0], offset + p++, chars[..1]);
-                    for (var j = 1; j < byteCount; j++)
-                    {
-                        yield return new CharData(bytes[j], offset + p++);
-                    }
+                    yield return new CharData(bytes[j], offset + p++);
                 }
             }
-
-            if (p == startPostion)
+            else
             {
-                // 処理が1byteも進んでいない場合のフォールバック処理:
-                yield return new CharData(bytes[0], offset + p++, [(char)bytes[0]]);
+                int byteCount = enc.GetByteCount(chars[..1]);
+                yield return new CharData(bytes[0], offset + p++, (int)chars[0]);
+                for (var j = 1; j < byteCount; j++)
+                {
+                    yield return new CharData(bytes[j], offset + p++);
+                }
             }
         }
     }
