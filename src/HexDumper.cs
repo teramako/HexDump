@@ -224,7 +224,6 @@ public static class HexDumper
         }
     }
 
-    private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc, long offset = 0)
     {
         int p = 0;
