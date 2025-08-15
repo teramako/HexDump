@@ -188,11 +188,11 @@ public static class HexDumper
         Console.ForegroundColor = c;
     }
 
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, long offset = 0)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, long offset = 0, int length = 0)
     {
-        return HexDump(data, Encoding.UTF8, offset);
+        return HexDump(data, Encoding.UTF8, offset, length);
     }
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding, long offset = 0)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding, long offset = 0, int length = 0)
     {
         if (data.Length < offset)
         {
@@ -202,9 +202,13 @@ public static class HexDumper
         {
             throw new ArgumentOutOfRangeException(nameof(offset), offset, $"Offset must be smaller than int ({int.MaxValue})");
         }
+        var targetData = length > 0 && data.Length > offset + length
+            ? data.Slice((int)offset, length)
+            : data.Slice((int)offset);
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         CharCollectionRow charDatas = new();
-        foreach (var charData in HexDumpCore(data.Slice((int)offset), enc, offset))
+        DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
+        foreach (var charData in HexDumpCore(targetData, enc, offset))
         {
             var col = charData.Col;
             charDatas.Set(charData);
