@@ -17,13 +17,16 @@ function Write-HexDump
         ,
         [Parameter()]
         [long] $Offset = 0
+        ,
+        [Parameter()]
+        [int] $Length = 0
     )
 
     switch ($PSCmdlet.ParameterSetName)
     {
         'Data'
         {
-            Write-Output ([HexDumper]::HexDump($Data, $Encoding, $Offset))
+            Write-Output ([HexDumper]::HexDump($Data, $Encoding, $Offset, $Length))
         }
         'Stream'
         {
