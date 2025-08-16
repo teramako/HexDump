@@ -6,10 +6,10 @@ function Write-HexDump
     [Alias("hexdump")]
     [OutputType([MT.HexDump.CharCollectionRow])]
     param(
-        [Parameter(ParameterSetName="Data", Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName="Data", Mandatory, ValueFromPipeline, Position = 0)]
         [byte[]] $Data
         ,
-        [Parameter(ParameterSetName="Stream", Mandatory, ValueFromPipeline)]
+        [Parameter(ParameterSetName="Stream", Mandatory, ValueFromPipeline, Position = 0)]
         [System.IO.Stream] $Stream
         ,
         [Parameter()]
