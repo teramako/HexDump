@@ -37,7 +37,7 @@ public class CharCollectionRow
         get
         {
             StringBuilder sb = new(48);
-            sb.AppendJoin('│', RowData.Select(static c => c.Filled ? c.DisplayString: "  "));
+            sb.AppendJoin('│', RowData.Select(static c => c.Filled ? c.GetDisplayString() : "  "));
             return sb.ToString();
         }
     }

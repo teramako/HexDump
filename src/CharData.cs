@@ -8,43 +8,7 @@ public struct CharData
     public bool Filled;
     public long Row => Position & 0x7FFFFFF0;
     public long Col => Position & 0x0000000F;
-    public string DisplayString
-    {
-        get
-        {
-            if (!Filled)
-                return "  ";
-            switch (CodePoint)
-            {
-                case < 0:
-                    return "..";
-                case < 0x20:
-                    return $"^{(char)(CodePoint + 0x40)}";
-                case < 0x7F:
-                    return $"{(char)CodePoint} ";
-                case 0x7F:
-                    return $"^{(char)(CodePoint - 0x40)}";
-                case <= 0x9F:
-                    return $"^{(char)(CodePoint + 0x40)}";
-                case <= 0xFF:
-                    return $"{(char)CodePoint} ";
-                default:
-                    var str = char.ConvertFromUtf32(CodePoint);
-                    if (char.IsSurrogatePair(str, 0))
-                    {
-                        return str;
-                    }
-                    else if (LengthInBufferCells(str[0]) == 2)
-                    {
-                        return str;
-                    }
-                    else
-                    {
-                        return $"{str} ";
-                    }
-            }
-        }
-    }
+
     public CharData(byte b, long position, int codePoint)
     {
         B = b;
@@ -56,6 +20,40 @@ public struct CharData
         : this(b, position, -1)
     {
     }
+
+    private const string NULL_LETTER = "  ";
+    private const string NON_LETTER = "..";
+    private const string CONTINUTION_LETTER = "←─";
+
+    /// <summary>
+    /// ダンプ結果の表示用に半角2つ分の文字列を返す。
+    /// </summary>
+    /// <param name="showLaten1">0x80 - 0xFF の Latin1 を印字するか否か</param>
+    public string GetDisplayString(bool showLaten1 = false, int cellLength = 2)
+    {
+        var str = !Filled
+            ? NULL_LETTER
+            : CodePoint switch
+            {
+                < 0 => CONTINUTION_LETTER,
+                < 0x20 => $"^{(char)(CodePoint + 0x40)}",
+                < 0x7F => $"{(char)CodePoint}",
+                0x7F => $"^{(char)(CodePoint - 0x40)}",
+                <= 0x9F => showLaten1 ? $"^{(char)(CodePoint + 0x40)}" : NON_LETTER,
+                <= 0xFF => showLaten1 ? $"{(char)CodePoint}" : NON_LETTER,
+                _ => char.ConvertFromUtf32(CodePoint)
+            };
+        var strCellLen = LengthInBufferCells(str);
+        return strCellLen < cellLength
+            ? str + new string(' ', cellLength - strCellLen)
+            : str;
+    }
+
+    internal static int LengthInBufferCells(string str)
+    {
+        return str.Sum(LengthInBufferCells);
+    }
+
     /// <seealso href="https://github.com/PowerShell/PowerShell/blob/7fe5cb3e354eb775778944e5419cfbcb8fede735/src/Microsoft.PowerShell.ConsoleHost/host/msh/ConsoleControl.cs#L2785-L2806"/>
     internal static int LengthInBufferCells(char c)
     {
