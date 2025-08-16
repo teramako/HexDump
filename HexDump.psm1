@@ -32,7 +32,7 @@ function Write-HexDump
         }
         'Stream'
         {
-            throw [System.NotSupportedException]::new("Not supported currently");
+            Write-Output ([HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length))
         }
     }
 }
