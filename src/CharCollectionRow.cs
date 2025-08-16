@@ -19,10 +19,7 @@ public class CharCollectionRow
 
     public IEnumerator<CharData> GetEnumerator()
     {
-        foreach(CharData c in RowData)
-        {
-            yield return c;
-        }
+        return RowData.Where(static c => c.Filled).GetEnumerator();
     }
 
     public string Row => $"0x{_row:X8}";
@@ -31,7 +28,7 @@ public class CharCollectionRow
         get
         {
             StringBuilder sb = new(48);
-                sb.AppendJoin(' ', RowData.Select(static c => c.Filled ? $"{c.B:X2}" : "  "));
+            sb.AppendJoin(' ', RowData.Select(static c => c.Filled ? $"{c.B:X2}" : "  "));
             return sb.ToString();
         }
     }
@@ -44,5 +41,6 @@ public class CharCollectionRow
             return sb.ToString();
         }
     }
+    public int Count => IsEmpty ? 0 : RowData.Count(static c => c.Filled);
 }
 
