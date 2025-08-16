@@ -50,6 +50,95 @@ public static class HexDumper
         }
     }
 
+    public static IEnumerable<CharCollectionRow> HexDump(Stream stream, Encoding encoding, long offset = 0, int length = 0)
+    {
+        CharCollectionRow charDatas = new();
+        foreach (var charData in HexDumpStream(stream, encoding, offset, length))
+        {
+            var col = charData.Col;
+            charDatas.Set(charData);
+            if (col == 0x0F)
+            {
+                yield return charDatas;
+                charDatas = new();
+            }
+        }
+        if (!charDatas.IsEmpty)
+        {
+            yield return charDatas;
+        }
+    }
+
+    public static IEnumerable<CharData> HexDumpStream(Stream stream, Encoding encoding, long offset = 0, int length = 0)
+    {
+        const int BUFFER_LENGTH = 36;
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
+        var buf = new byte[length > 0 ? Math.Min(BUFFER_LENGTH, length) : BUFFER_LENGTH];
+        long totalReadBytes = offset;
+        int remainingBytes;
+        int readBytes;
+        if (stream.CanSeek)
+        {
+            stream.Seek(offset, SeekOrigin.Begin);
+        }
+        else if (stream.Position < offset)
+        {
+            var seekCount = (offset - stream.Position) / BUFFER_LENGTH;
+            remainingBytes = (int)(offset % BUFFER_LENGTH);
+            for (var i = 0; i < seekCount; i++)
+            {
+                _ = stream.Read(buf);
+            }
+            if (remainingBytes > 0)
+            {
+                _ = stream.Read(buf, 0, remainingBytes);
+            }
+        }
+
+        CharData c;
+        var charDataQueue = new Queue<CharData>(3);
+        int remainingQueueCount = charDataQueue.Count;
+        remainingBytes = length > 0 ? length : int.MaxValue;
+        while ((readBytes = stream.Read(buf, remainingQueueCount, Math.Min(buf.Length - remainingQueueCount, remainingBytes))) > 0)
+        {
+            for (var i = 0; i < remainingQueueCount; i++)
+            {
+                buf[i] = charDataQueue.Dequeue().B;
+            }
+
+            foreach (var charData in HexDumpCore(buf[..(remainingQueueCount + readBytes)], enc, totalReadBytes - remainingQueueCount))
+            {
+                if (charData.CodePoint is >= 0 and <= 0xFF)
+                {
+                    charDataQueue.Enqueue(charData);
+                    while (charDataQueue.Count > 3)
+                    {
+                        yield return charDataQueue.Dequeue();
+                    }
+                }
+                else
+                {
+                    while (charDataQueue.TryDequeue(out c))
+                    {
+                        yield return c;
+                    }
+                    yield return charData;
+                }
+            }
+            remainingBytes -= readBytes;
+            if (remainingBytes <= 0)
+            {
+                break;
+            }
+            totalReadBytes += readBytes;
+            remainingQueueCount = charDataQueue.Count;
+        }
+        while (charDataQueue.TryDequeue(out c))
+        {
+            yield return c;
+        }
+    }
+
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc, long offset = 0)
     {
         int p = 0;
