@@ -40,6 +40,36 @@
       </TableControl>
     </View>
     <View>
+      <Name>UnifyHexAndChars</Name>
+      <ViewSelectedBy>
+        <TypeName>MT.HexDump.CharCollectionRow</TypeName>
+      </ViewSelectedBy>
+      <TableControl>
+        <AutoSize>true</AutoSize>
+        <TableHeaders>
+          <TableColumnHeader>
+            <Width>10</Width>
+          </TableColumnHeader>
+          <TableColumnHeader>
+            <Label>Hex and Letters</Label>
+          </TableColumnHeader>
+        </TableHeaders>
+        <TableRowEntries>
+          <TableRowEntry>
+            <Wrap>true</Wrap>
+            <TableColumnItems>
+              <TableColumnItem>
+                <PropertyName>Row</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>"{0}`n{1}" -f $_.Hex, $_.Chars</ScriptBlock>
+              </TableColumnItem>
+            </TableColumnItems>
+          </TableRowEntry>
+        </TableRowEntries>
+      </TableControl>
+    </View>
+    <View>
       <Name>CharData</Name>
       <ViewSelectedBy>
         <TypeName>MT.HexDump.CharData</TypeName>
