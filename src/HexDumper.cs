@@ -71,7 +71,7 @@ public static class HexDumper
 
     public static IEnumerable<CharData> HexDumpStream(Stream stream, Encoding encoding, long offset = 0, int length = 0)
     {
-        const int BUFFER_LENGTH = 36;
+        const int BUFFER_LENGTH = 1024;
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         var buf = new byte[length > 0 ? Math.Min(BUFFER_LENGTH, length) : BUFFER_LENGTH];
         long totalReadBytes = offset;
