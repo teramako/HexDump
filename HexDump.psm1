@@ -14,6 +14,7 @@ function Write-HexDump
         ,
         [Parameter()]
         [MT.HexDump.EncodingTransformation()]
+        [ArgumentCompleter([MT.HexDump.EncodingArgumentCompleter])]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
         ,
         [Parameter()]
