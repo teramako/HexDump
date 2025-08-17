@@ -26,15 +26,39 @@ public class CharCollectionRow
     }
 
     public string Row => $"0x{_row:X8}";
-    public string Hex
+    public string Hex => GetHexRow();
+
+    /// <summary>
+    /// バイトデータの16進数値行を返す。
+    /// </summary>
+    /// <inheritdoc cref="PrintHexRow(StringBuilder, string, int)"/>
+    public string GetHexRow(string separator = " ", int cellLength = 2)
     {
-        get
+        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
+        PrintHexRow(sb, separator, cellLength);
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 各バイトデータの16進数値を <paramref name="sb"/> に書き込む
+    /// </summary>
+    /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
+    /// <param name="separator">区切り文字列</param>
+    /// <param name="cellLength">1データのセル数</param>
+    public void PrintHexRow(StringBuilder sb, string separator = " ", int cellLength = 2)
+    {
+        var remainingCellCount = cellLength - 2;
+        for (var i = 0; i < RowData.Length; i++)
         {
-            StringBuilder sb = new(48);
-            sb.AppendJoin(' ', RowData.Select(static c => c.Filled ? $"{c.B:X2}" : "  "));
-            return sb.ToString();
+            if (i != 0)
+            {
+                sb.Append(separator);
+            }
+            sb.Append($"{RowData[i].B:X2}")
+              .Append(' ', remainingCellCount);
         }
     }
+
     public string Chars
     {
         get
@@ -44,6 +68,7 @@ public class CharCollectionRow
             return sb.ToString();
         }
     }
+
     public int Count => IsEmpty ? 0 : RowData.Count(static c => c.Filled);
 }
 
