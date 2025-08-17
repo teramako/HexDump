@@ -83,6 +83,9 @@
           <TableColumnHeader>
           </TableColumnHeader>
           <TableColumnHeader>
+            <Label>Code Point</Label>
+          </TableColumnHeader>
+          <TableColumnHeader>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
@@ -101,7 +104,11 @@
                 <FormatString>X2</FormatString>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>DisplayString</PropertyName>
+                <ScriptBlock>if ($_.CodePoint -ge 0){ "U+{0:X8}" -f $_.CodePoint }</ScriptBlock>
+                <Alignment>Right</Alignment>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>RawString</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
