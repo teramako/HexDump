@@ -3,7 +3,7 @@
                xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/PowerShell/PowerShell/master/src/Schemas/Format.xsd">
   <ViewDefinitions>
     <View>
-      <Name>HexDump</Name>
+      <Name>SplitHexAndChars</Name>
       <ViewSelectedBy>
         <TypeName>MT.HexDump.CharCollectionRow</TypeName>
       </ViewSelectedBy>
@@ -32,7 +32,7 @@
                 <PropertyName>Hex</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>Chars</PropertyName>
+                <ScriptBlock>$_.GetCharsRow('│', 2)</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -62,7 +62,12 @@
                 <PropertyName>Row</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>"{0}`n{1}" -f $_.Hex, $_.Chars</ScriptBlock>
+                <ScriptBlock>
+                $sb = [System.Text.StringBuilder]::new();
+                $_.PrintHexRow($sb, ' ', 3);
+                $_.PrintCharsRow($sb.Append("`n"), ' ', 3);
+                $sb.ToString();
+                </ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
