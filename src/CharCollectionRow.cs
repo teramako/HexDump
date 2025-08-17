@@ -59,13 +59,34 @@ public class CharCollectionRow
         }
     }
 
-    public string Chars
+    public string Chars => GetCharsRow(" ");
+
+    /// <summary>
+    /// 表示文字列用の行を返す。
+    /// </summary>
+    /// <inheritdoc cref="PrintCharsRow(StringBuilder, string, int, bool)"/>
+    public string GetCharsRow(string separator = " ", int cellLength = 2, bool showLatin1 = false)
     {
-        get
+        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
+        PrintCharsRow(sb, separator, cellLength, showLatin1);
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 各バイトデータの文字列化した値を <paramref name="sb"/> に追加する
+    /// </summary>
+    /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
+    /// <param name="separator">区切り文字列</param>
+    /// <param name="cellLength">1データのセル数</param>
+    public void PrintCharsRow(StringBuilder sb, string separator = " ", int cellLength = 2, bool showLatin1 = false)
+    {
+        for (var i = 0; i < RowData.Length; i++)
         {
-            StringBuilder sb = new(48);
-            sb.AppendJoin('│', RowData.Select(static c => c.Filled ? c.GetDisplayString() : "  "));
-            return sb.ToString();
+            if (i != 0)
+            {
+                sb.Append(separator);
+            }
+            RowData[i].PrintDisplayString(sb, cellLength, showLatin1);
         }
     }
 
