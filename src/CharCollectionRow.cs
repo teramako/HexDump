@@ -7,7 +7,10 @@ public class CharCollectionRow
     internal CharData[] RowData = new CharData[16];
     private long _row;
 
-    public bool IsEmpty = true;
+    /// <summary>
+    /// <see cref="CharData"/> が一つでもセットされたかのフラグ
+    /// </summary>
+    internal bool IsEmpty = true;
 
     internal void Set(CharData data)
     {
