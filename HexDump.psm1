@@ -24,17 +24,37 @@ function Write-HexDump
         [Parameter()]
         [ValidateRange(0, [int]::MaxValue)]
         [int] $Length = 0
+        ,
+        [Parameter()]
+        [ValidateSet('SplitHexAndChars', 'UnifyHexAndChars')]
+        [string] $Format
     )
 
-    switch ($PSCmdlet.ParameterSetName)
+    $dumpIter = switch ($PSCmdlet.ParameterSetName)
     {
         'Data'
         {
-            Write-Output ([HexDumper]::HexDump($Data, $Encoding, $Offset, $Length))
+            [HexDumper]::HexDump($Data, $Encoding, $Offset, $Length)
         }
         'Stream'
         {
-            Write-Output ([HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length))
+            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length)
+        }
+    }
+
+    switch ($Format)
+    {
+        'SplitHexAndChars'
+        {
+            $dumpIter | Format-Table -View SplitHexAndChars
+        }
+        'UnifyHexAndChars'
+        {
+            $dumpIter | Format-Table -View UnifyHexAndChars
+        }
+        default
+        {
+            Write-Output $dumpIter
         }
     }
 }
