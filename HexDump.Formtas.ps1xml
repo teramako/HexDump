@@ -87,6 +87,8 @@
           </TableColumnHeader>
           <TableColumnHeader>
           </TableColumnHeader>
+          <TableColumnHeader>
+          </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
@@ -109,6 +111,9 @@
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>RawString</PropertyName>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>UnicodeCategory</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

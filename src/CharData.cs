@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace MT.HexDump;
 
 public struct CharData
@@ -54,6 +56,17 @@ public struct CharData
     /// コードポイントを単純に文字列化した値
     /// </summary>
     public string RawString => CodePoint > 0 ? char.ConvertFromUtf32(CodePoint) : string.Empty;
+
+    public UnicodeCategory? UnicodeCategory
+    {
+        get
+        {
+            var str = RawString;
+            if (string.IsNullOrEmpty(str))
+                return null;
+            return char.GetUnicodeCategory(str, 0);
+        }
+    }
 
     /// <summary>
     /// ダンプ結果の表示用に半角2つ分の文字列を返す。
