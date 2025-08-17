@@ -13,6 +13,7 @@ function Write-HexDump
         [System.IO.Stream] $Stream
         ,
         [Parameter()]
+        [MT.HexDump.EncodingTransformation()]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
         ,
         [Parameter()]
