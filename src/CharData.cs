@@ -51,6 +51,11 @@ public struct CharData
     private const string CONTINUTION_LETTER = "←─";
 
     /// <summary>
+    /// コードポイントを単純に文字列化した値
+    /// </summary>
+    public string RawString => CodePoint > 0 ? char.ConvertFromUtf32(CodePoint) : string.Empty;
+
+    /// <summary>
     /// ダンプ結果の表示用に半角2つ分の文字列を返す。
     /// </summary>
     /// <param name="showLaten1">0x80 - 0xFF の Latin1 を印字するか否か</param>
