@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Test OreOreSec
+Test HexDump
 
 .PARAMETER FullName
 テストのフィルター
