@@ -2,13 +2,34 @@ namespace MT.HexDump;
 
 public struct CharData
 {
+    /// <summary>
+    /// データの先頭からの位置
+    /// </summary>
     private long Position;
+    /// <summary>
+    /// 基本的には Unicode コードポイント。
+    /// ただし、マイナス値の場合はマルチバイト文字における後続バイトであることを示す。
+    /// </summary>
     public int CodePoint;
+    /// <summary>
+    /// Byte data
+    /// </summary>
     public byte B;
+    /// <summary>
+    /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
+    /// </summary>
     public bool Filled;
     public long Row => Position & 0x7FFFFFF0;
     public long Col => Position & 0x0000000F;
 
+    /// <summary>
+    /// 標準のコンストラクタ
+    /// </summary>
+    /// <param name="b">そのポイントのバイトデータ</param>
+    /// <param name="position">バイトデータの位置</param>
+    /// <param name="codePoint">
+    /// Unicodeコードポイント。マイナス値にするとマルチバイト文字における後続バイトであることになる
+    /// </param>
     public CharData(byte b, long position, int codePoint)
     {
         B = b;
@@ -16,6 +37,10 @@ public struct CharData
         CodePoint = codePoint;
         Filled = true;
     }
+    /// <summary>
+    /// マルチバイト文字における後続バイトである場合のコンストラクタ
+    /// </summary>
+    /// <inheritdoc cref="CharData.CharData(byte, long, int)"/>
     public CharData(byte b, long position)
         : this(b, position, -1)
     {
@@ -29,6 +54,7 @@ public struct CharData
     /// ダンプ結果の表示用に半角2つ分の文字列を返す。
     /// </summary>
     /// <param name="showLaten1">0x80 - 0xFF の Latin1 を印字するか否か</param>
+    /// <param name="cellLength">返す文字列のセル数（ターミナル上の半角文字数）</param>
     public string GetDisplayString(bool showLaten1 = false, int cellLength = 2)
     {
         var str = !Filled
@@ -49,11 +75,17 @@ public struct CharData
             : str;
     }
 
+    /// <summary>
+    /// 対象文字列のセル数を計算する。（ターミナル上の半角文字幾つ分になるか）
+    /// </summary>
     internal static int LengthInBufferCells(string str)
     {
         return str.Sum(LengthInBufferCells);
     }
 
+    /// <summary>
+    /// 対象文字のセル数を計算する。（ターミナル上の半角文字幾つ分になるか）
+    /// </summary>
     /// <seealso href="https://github.com/PowerShell/PowerShell/blob/7fe5cb3e354eb775778944e5419cfbcb8fede735/src/Microsoft.PowerShell.ConsoleHost/host/msh/ConsoleControl.cs#L2785-L2806"/>
     internal static int LengthInBufferCells(char c)
     {
