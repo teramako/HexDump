@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace MT.HexDump;
 
@@ -69,13 +70,12 @@ public struct CharData
     }
 
     /// <summary>
-    /// ダンプ結果の表示用に半角2つ分の文字列を返す。
+    /// ダンプ結果の表示用の文字列を返す
     /// </summary>
     /// <param name="showLaten1">0x80 - 0xFF の Latin1 を印字するか否か</param>
-    /// <param name="cellLength">返す文字列のセル数（ターミナル上の半角文字数）</param>
-    public string GetDisplayString(bool showLaten1 = false, int cellLength = 2)
+    public string GetDisplayString(bool showLaten1 = false)
     {
-        var str = !Filled
+        return !Filled
             ? NULL_LETTER
             : CodePoint switch
             {
@@ -87,10 +87,22 @@ public struct CharData
                 <= 0xFF => showLaten1 ? $"{(char)CodePoint}" : NON_LETTER,
                 _ => char.ConvertFromUtf32(CodePoint)
             };
+    }
+
+    /// <summary>
+    /// ダンプ結果の表示用の文字列を <paramref name="sb"/> へ書き込む
+    /// </summary>
+    /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
+    /// <param name="cellLength">セル数。足りない場合は末尾に半角空白が埋められる</param>
+    internal void PrintDisplayString(StringBuilder sb, int cellLength = 2, bool showLaten1 = false)
+    {
+        var str = GetDisplayString(showLaten1);
         var strCellLen = LengthInBufferCells(str);
-        return strCellLen < cellLength
-            ? str + new string(' ', cellLength - strCellLen)
-            : str;
+        sb.Append(str);
+        if (strCellLen < cellLength)
+        {
+            sb.Append(' ', cellLength - strCellLen);
+        }
     }
 
     /// <summary>
