@@ -31,20 +31,21 @@ public static class HexDumper
         var targetData = length > 0 && data.Length > offset + length
             ? data.Slice((int)offset, length)
             : data.Slice((int)offset);
+        long position = offset;
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
-        CharCollectionRow charDatas = new();
+        CharCollectionRow charDatas = new(position);
         DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
-        foreach (var charData in HexDumpCore(targetData, enc, offset))
+        foreach (var charData in HexDumpCore(targetData, enc))
         {
-            var col = charData.Col;
-            charDatas.Set(charData);
-            if (col == 0x0F)
+            charDatas.Set(position, charData);
+            if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new();
+                charDatas = new(position + 1);
             }
+            position++;
         }
-        if (!charDatas.IsEmpty)
+        if (charDatas is not null && !charDatas.IsEmpty)
         {
             yield return charDatas;
         }
@@ -52,18 +53,19 @@ public static class HexDumper
 
     public static IEnumerable<CharCollectionRow> HexDump(Stream stream, Encoding encoding, long offset = 0, int length = 0)
     {
-        CharCollectionRow charDatas = new();
+        long position = offset;
+        CharCollectionRow charDatas = new(position);
         foreach (var charData in HexDumpStream(stream, encoding, offset, length))
         {
-            var col = charData.Col;
-            charDatas.Set(charData);
-            if (col == 0x0F)
+            charDatas.Set(position, charData);
+            if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new();
+                charDatas = new(position + 1);
             }
+            position++;
         }
-        if (!charDatas.IsEmpty)
+        if (charDatas is not null && !charDatas.IsEmpty)
         {
             yield return charDatas;
         }
@@ -110,7 +112,7 @@ public static class HexDumper
                 buf[i] = charDataQueue.Dequeue().B;
             }
 
-            foreach (var charData in HexDumpCore(buf[..(remainingQueueCount + readBytes)], enc, totalReadBytes - remainingQueueCount))
+            foreach (var charData in HexDumpCore(buf[..(remainingQueueCount + readBytes)], enc))
             {
                 if (charData.CodePoint is >= 0 and <= 0xFF)
                 {
@@ -143,7 +145,7 @@ public static class HexDumper
         }
     }
 
-    private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc, long offset = 0)
+    private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
     {
         int p = 0;
         while (p < data.Length)
@@ -154,26 +156,29 @@ public static class HexDumper
             if (chars[0] <= 0xFF)
             {
                 DebugPrint($"p={p:X8}: char[0]=0x{(int)chars[0]:X2} [0x00 - 0xFF] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], offset + p++, (int)chars[0]);
+                yield return new CharData(bytes[0], (int)chars[0]);
+                p++;
             }
             else if (char.IsSurrogatePair(chars[0], chars[1]))
             {
                 DebugPrint($"p={p:X8}: char=[0x{(int)chars[0]:X2}, 0x{(int)chars[1]:X2}] [SurrogatePair] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], offset + p++, char.ConvertToUtf32(chars[0], chars[1]));
+                yield return new CharData(bytes[0], char.ConvertToUtf32(chars[0], chars[1]));
                 for (var j = 1; j < bytes.Length; j++)
                 {
-                    yield return new CharData(bytes[j], offset + p++);
+                    yield return new CharData(bytes[j]);
                 }
+                p += bytes.Length;
             }
             else
             {
                 int byteCount = enc.GetByteCount(chars[..1]);
                 DebugPrint($"p={p:X8}: char[0]=0x{(int)chars[0]:X2} [> 0xFF] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], offset + p++, (int)chars[0]);
+                yield return new CharData(bytes[0], (int)chars[0]);
                 for (var j = 1; j < byteCount; j++)
                 {
-                    yield return new CharData(bytes[j], offset + p++);
+                    yield return new CharData(bytes[j]);
                 }
+                p += byteCount;
             }
         }
     }

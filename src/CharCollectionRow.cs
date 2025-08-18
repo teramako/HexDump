@@ -2,21 +2,22 @@ using System.Text;
 
 namespace MT.HexDump;
 
-public class CharCollectionRow
+/// <summary>
+/// <see cref="CharData"/> 16個を入れた行
+/// </summary>
+public class CharCollectionRow(long row)
 {
     internal CharData[] RowData = new CharData[16];
-    private long _row;
+    private long _row = row & 0x7FFFFFF0;
 
     /// <summary>
     /// <see cref="CharData"/> が一つでもセットされたかのフラグ
     /// </summary>
     internal bool IsEmpty = true;
 
-    internal void Set(CharData data)
+    internal void Set(long position, CharData data)
     {
-        var col = data.Col;
-        _row = data.Row;
-        RowData[col] = data;
+        RowData[position & 0x0F] = data;
         IsEmpty = false;
     }
 

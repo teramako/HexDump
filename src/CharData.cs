@@ -6,10 +6,6 @@ namespace MT.HexDump;
 public struct CharData
 {
     /// <summary>
-    /// データの先頭からの位置
-    /// </summary>
-    private long Position;
-    /// <summary>
     /// 基本的には Unicode コードポイント。
     /// ただし、マイナス値の場合はマルチバイト文字における後続バイトであることを示す。
     /// </summary>
@@ -22,30 +18,26 @@ public struct CharData
     /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
     /// </summary>
     public bool Filled;
-    public long Row => Position & 0x7FFFFFF0;
-    public long Col => Position & 0x0000000F;
 
     /// <summary>
     /// 標準のコンストラクタ
     /// </summary>
     /// <param name="b">そのポイントのバイトデータ</param>
-    /// <param name="position">バイトデータの位置</param>
     /// <param name="codePoint">
     /// Unicodeコードポイント。マイナス値にするとマルチバイト文字における後続バイトであることになる
     /// </param>
-    public CharData(byte b, long position, int codePoint)
+    public CharData(byte b, int codePoint)
     {
         B = b;
-        Position = position;
         CodePoint = codePoint;
         Filled = true;
     }
     /// <summary>
     /// マルチバイト文字における後続バイトである場合のコンストラクタ
     /// </summary>
-    /// <inheritdoc cref="CharData.CharData(byte, long, int)"/>
-    public CharData(byte b, long position)
-        : this(b, position, -1)
+    /// <inheritdoc cref="CharData.CharData(byte, int, int)"/>
+    public CharData(byte b)
+        : this(b, -1)
     {
     }
 
