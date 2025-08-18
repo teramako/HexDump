@@ -54,8 +54,15 @@ public class CharCollectionRow
             {
                 sb.Append(separator);
             }
-            sb.Append($"{RowData[i].B:X2}")
-              .Append(' ', remainingCellCount);
+            if (RowData[i].Filled)
+            {
+                sb.Append($"{RowData[i].B:X2}")
+                  .Append(' ', remainingCellCount);
+            }
+            else
+            {
+                sb.Append(' ', cellLength);
+            }
         }
     }
 
