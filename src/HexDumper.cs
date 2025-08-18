@@ -94,6 +94,10 @@ public static class HexDumper
                 _ = stream.Read(buf, 0, remainingBytes);
             }
         }
+        else
+        {
+            throw new InvalidOperationException($"Could not seek to {offset} (current position: {stream.Position})");
+        }
 
         CharData c;
         var charDataQueue = new Queue<CharData>(3);
