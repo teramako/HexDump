@@ -35,14 +35,6 @@ public struct CharData
         CodePoint = codePoint;
         _filled = 1;
     }
-    /// <summary>
-    /// マルチバイト文字における後続バイトである場合のコンストラクタ
-    /// </summary>
-    /// <inheritdoc cref="CharData.CharData(byte, int, int)"/>
-    public CharData(byte b)
-        : this(b, -1)
-    {
-    }
 
     private const string NULL_LETTER = "  ";
     private const string NON_LETTER = "..";

@@ -165,7 +165,7 @@ public static class HexDumper
                 yield return new CharData(bytes[0], char.ConvertToUtf32(chars[0], chars[1]));
                 for (var j = 1; j < bytes.Length; j++)
                 {
-                    yield return new CharData(bytes[j]);
+                    yield return new CharData(bytes[j], -j);
                 }
                 p += bytes.Length;
             }
@@ -176,7 +176,7 @@ public static class HexDumper
                 yield return new CharData(bytes[0], (int)chars[0]);
                 for (var j = 1; j < byteCount; j++)
                 {
-                    yield return new CharData(bytes[j]);
+                    yield return new CharData(bytes[j], -j);
                 }
                 p += byteCount;
             }
