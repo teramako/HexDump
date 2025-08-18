@@ -1,8 +1,10 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace MT.HexDump;
 
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct CharData
 {
     /// <summary>
@@ -17,7 +19,8 @@ public struct CharData
     /// <summary>
     /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
     /// </summary>
-    public bool Filled;
+    private byte _filled;
+    internal bool Filled => _filled > 0;
 
     /// <summary>
     /// 標準のコンストラクタ
@@ -30,7 +33,7 @@ public struct CharData
     {
         B = b;
         CodePoint = codePoint;
-        Filled = true;
+        _filled = 1;
     }
     /// <summary>
     /// マルチバイト文字における後続バイトである場合のコンストラクタ
