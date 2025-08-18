@@ -38,7 +38,8 @@ public struct CharData
 
     private const string NULL_LETTER = "  ";
     private const string NON_LETTER = "..";
-    private const string CONTINUTION_LETTER = "←─";
+    private const string CONTINUTION_LETTER_FIRST = "←─";
+    private const string CONTINUTION_LETTER = "──";
 
     /// <summary>
     /// コードポイントを単純に文字列化した値
@@ -66,6 +67,7 @@ public struct CharData
             ? NULL_LETTER
             : CodePoint switch
             {
+                -1 => CONTINUTION_LETTER_FIRST,
                 < 0 => CONTINUTION_LETTER,
                 < 0x20 => $"^{(char)(CodePoint + 0x40)}",
                 < 0x7F => $"{(char)CodePoint}",
