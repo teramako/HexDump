@@ -8,15 +8,15 @@ namespace MT.HexDump;
 /// Hexdump 処理において、別の文字へ置き換えや例外を飛ばしたくないため、無視させる。
 /// </para>
 /// </summary>
-internal class IgnoreFallback : DecoderFallback
+internal class MultiByteFallback : DecoderFallback
 {
     public override int MaxCharCount => 1;
 
     public override DecoderFallbackBuffer CreateFallbackBuffer()
     {
-        return new IgnoreFallbackBufer();
+        return new MultiByteFallbackBuffer();
     }
-    private class IgnoreFallbackBufer : DecoderFallbackBuffer
+    private class MultiByteFallbackBuffer : DecoderFallbackBuffer
     {
         private byte _firstByte;
         private int _remaining;
@@ -50,4 +50,3 @@ internal class IgnoreFallback : DecoderFallback
         }
     }
 }
-
