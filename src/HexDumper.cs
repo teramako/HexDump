@@ -32,15 +32,10 @@ public static class HexDumper
             ? data.Slice((int)offset, length)
             : data.Slice((int)offset);
         long position = offset;
-        var enc = encoding.IsSingleByte
-            ? Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new SingleByteFallback())
-            : Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new MultiByteFallback());
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         CharCollectionRow charDatas = new(position);
         DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
-        var charDataIterator = encoding.IsSingleByte
-            ? HexDumpSingleByte(data, enc)
-            : HexDumpMultiByte(data, enc);
-        foreach (var charData in charDataIterator)
+        foreach (var charData in HexDumpCore(targetData, enc))
         {
             charDatas.Set(position, charData);
             if ((position & 0x0F) == 0x0F)
@@ -79,9 +74,7 @@ public static class HexDumper
     public static IEnumerable<CharData> HexDumpStream(Stream stream, Encoding encoding, long offset = 0, int length = 0)
     {
         const int BUFFER_LENGTH = 1024;
-        var enc = encoding.IsSingleByte
-            ? Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new SingleByteFallback())
-            : Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new MultiByteFallback());
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
         var buf = new byte[length > 0 ? Math.Min(BUFFER_LENGTH, length) : BUFFER_LENGTH];
         long totalReadBytes = offset;
         int remainingBytes;
@@ -119,10 +112,7 @@ public static class HexDumper
                 buf[i] = charDataQueue.Dequeue().B;
             }
 
-            var charDataIterator = encoding.IsSingleByte
-                ? HexDumpSingleByte(buf[..(remainingQueueCount + readBytes)], enc)
-                : HexDumpMultiByte(buf[..(remainingQueueCount + readBytes)], enc);
-            foreach (var charData in charDataIterator)
+            foreach (var charData in HexDumpCore(buf[..(remainingQueueCount + readBytes)], enc))
             {
                 if (charData.CodePoint is >= 0 and <= 0xFF)
                 {
@@ -155,7 +145,7 @@ public static class HexDumper
         }
     }
 
-    private static IEnumerable<CharData> HexDumpMultiByte(ReadOnlyMemory<byte> data, Encoding enc)
+    private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
     {
         int p = 0;
         while (p < data.Length)
@@ -190,15 +180,6 @@ public static class HexDumper
                 }
                 p += byteCount;
             }
-        }
-    }
-    private static IEnumerable<CharData> HexDumpSingleByte(ReadOnlyMemory<byte> data, Encoding enc)
-    {
-        var chars = new char[data.Length];
-        var count = enc.GetChars(data.Span, chars);
-        for (var i = 0; i < count; i++)
-        {
-            yield return new CharData(data.Span[i], (int)chars[i]);
         }
     }
 }
