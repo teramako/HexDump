@@ -82,43 +82,40 @@
       <TableControl>
         <TableHeaders>
           <TableColumnHeader>
+            <Label>Byte</Label>
           </TableColumnHeader>
           <TableColumnHeader>
+            <Label>CodePoint</Label>
           </TableColumnHeader>
+          <TableColumnHeader /><!-- IsChar -->
+          <TableColumnHeader /><!-- UnicodeCategory -->
+          <TableColumnHeader /><!-- RawString -->
           <TableColumnHeader>
-          </TableColumnHeader>
-          <TableColumnHeader>
-            <Label>Code Point</Label>
-          </TableColumnHeader>
-          <TableColumnHeader>
-          </TableColumnHeader>
-          <TableColumnHeader>
+            <Label>DisplayString</Label>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
             <TableColumnItems>
               <TableColumnItem>
-                <PropertyName>Row</PropertyName>
-                <FormatString>X8</FormatString>
-              </TableColumnItem>
-              <TableColumnItem>
-                <PropertyName>Col</PropertyName>
-                <FormatString>X</FormatString>
-              </TableColumnItem>
-              <TableColumnItem>
-                <PropertyName>B</PropertyName>
-                <FormatString>X2</FormatString>
-              </TableColumnItem>
-              <TableColumnItem>
-                <ScriptBlock>if ($_.CodePoint -ge 0){ "U+{0:X8}" -f $_.CodePoint }</ScriptBlock>
+                <ScriptBlock>"0x{0:X2}" -f $_.B</ScriptBlock>
                 <Alignment>Right</Alignment>
+              </TableColumnItem>
+              <TableColumnItem>
+                <ScriptBlock>if ($_.IsChar){ "U+{0:X8}" -f $_.CodePoint }</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>IsChar</PropertyName>
+                <Alignment>Right</Alignment>
+              </TableColumnItem>
+              <TableColumnItem>
+                <PropertyName>UnicodeCategory</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>RawString</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <PropertyName>UnicodeCategory</PropertyName>
+                <ScriptBlock>if ($_.IsChar) { $_.GetDisplayString() }</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
