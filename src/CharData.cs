@@ -20,7 +20,14 @@ public struct CharData
     /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
     /// </summary>
     private byte _filled;
+    private byte _isChar;
     internal bool Filled => _filled > 0;
+
+    /// <summary>
+    /// 文字データであるか否か。
+    /// （マルチバイト文字の後続バイト値のデータは除外される）
+    /// </summary>
+    public bool IsChar => CodePoint >= 0 && _isChar > 0;
 
     /// <summary>
     /// 標準のコンストラクタ
@@ -29,11 +36,16 @@ public struct CharData
     /// <param name="codePoint">
     /// Unicodeコードポイント。マイナス値にするとマルチバイト文字における後続バイトであることになる
     /// </param>
-    public CharData(byte b, int codePoint)
+    /// <param name="isChar">デコードできた文字か否か</param>
+    public CharData(byte b, int codePoint, bool isChar = false)
     {
         B = b;
         CodePoint = codePoint;
         _filled = 1;
+        if (isChar)
+        {
+            _isChar = 1;
+        }
     }
 
     private const string NULL_LETTER = "  ";

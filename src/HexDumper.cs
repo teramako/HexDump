@@ -32,7 +32,7 @@ public static class HexDumper
             ? data.Slice((int)offset, length)
             : data.Slice((int)offset);
         long position = offset;
-        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
         CharCollectionRow charDatas = new(position);
         DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
         foreach (var charData in HexDumpCore(targetData, enc))
@@ -74,7 +74,7 @@ public static class HexDumper
     public static IEnumerable<CharData> HexDumpStream(Stream stream, Encoding encoding, long offset = 0, int length = 0)
     {
         const int BUFFER_LENGTH = 1024;
-        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new IgnoreFallback());
+        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
         var buf = new byte[length > 0 ? Math.Min(BUFFER_LENGTH, length) : BUFFER_LENGTH];
         long totalReadBytes = offset;
         int remainingBytes;
@@ -147,38 +147,51 @@ public static class HexDumper
 
     private static IEnumerable<CharData> HexDumpCore(ReadOnlyMemory<byte> data, Encoding enc)
     {
+        var fb = ((TopBytesFallback)enc.DecoderFallback).FallbackBuffer;
         int p = 0;
+        char[] chars = new char[5];
+        int charsWritten;
         while (p < data.Length)
         {
             var bytes = data.Span.Slice(p, Math.Min(4, data.Length - p)).ToArray();
-            char[] chars = new char[2];
-            enc.TryGetChars(bytes, chars, out _);
-            if (chars[0] <= 0xFF)
+            var byteIndex = 0;
+            // var str = enc.GetString(bytes);
+            if (!enc.TryGetChars(bytes, chars, out charsWritten))
             {
-                DebugPrint($"p={p:X8}: char[0]=0x{(int)chars[0]:X2} [0x00 - 0xFF] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], (int)chars[0]);
-                p++;
+                throw new DecoderFallbackException($"", bytes, 0);
             }
-            else if (char.IsSurrogatePair(chars[0], chars[1]))
+            if (fb.HasFallbackChars)
             {
-                DebugPrint($"p={p:X8}: char=[0x{(int)chars[0]:X2}, 0x{(int)chars[1]:X2}] [SurrogatePair] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], char.ConvertToUtf32(chars[0], chars[1]));
-                for (var j = 1; j < bytes.Length; j++)
+                foreach (var fbCharData in fb.GetFallbackChars())
                 {
-                    yield return new CharData(bytes[j], -j);
+                    DebugPrint($"p={p:X8}: (Fallback) {fbCharData}");
+                    yield return fbCharData;
+                    p++;
+                    byteIndex++;
                 }
-                p += bytes.Length;
             }
-            else
+            for (var i = 0; i < charsWritten; i++)
             {
-                int byteCount = enc.GetByteCount(chars[..1]);
-                DebugPrint($"p={p:X8}: char[0]=0x{(int)chars[0]:X2} [> 0xFF] bytes=[{string.Join(' ', bytes.Select(static b => $"{b:X2}"))}]", ConsoleColor.Blue);
-                yield return new CharData(bytes[0], (int)chars[0]);
+                string rune;
+                if (i + 1 < charsWritten && char.IsSurrogatePair(chars[i], chars[i + 1]))
+                {
+                    rune = char.ConvertFromUtf32(char.ConvertToUtf32(chars[i], chars[i + 1]));
+                    i++;
+                }
+                else
+                {
+                    rune = char.ConvertFromUtf32((int)chars[i]);
+                }
+                byte byteCount = (byte)enc.GetByteCount(rune);
+                CharData charData = new(bytes[byteIndex], char.ConvertToUtf32(rune, 0), true);
+                DebugPrint($"p={p:X8}: {charData}", ConsoleColor.Blue);
+                yield return charData;
                 for (var j = 1; j < byteCount; j++)
                 {
-                    yield return new CharData(bytes[j], -j);
+                    yield return new CharData(bytes[byteIndex + j], -j, true);
                 }
                 p += byteCount;
+                byteIndex += byteCount;
             }
         }
     }
