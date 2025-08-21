@@ -56,7 +56,7 @@ public struct CharData
     /// <summary>
     /// コードポイントを単純に文字列化した値
     /// </summary>
-    public string RawString => CodePoint > 0 ? char.ConvertFromUtf32(CodePoint) : string.Empty;
+    public string RawString => IsChar ? char.ConvertFromUtf32(CodePoint) : string.Empty;
 
     public UnicodeCategory? UnicodeCategory
     {
@@ -72,8 +72,7 @@ public struct CharData
     /// <summary>
     /// ダンプ結果の表示用の文字列を返す
     /// </summary>
-    /// <param name="showLatin1">0x80 - 0xFF の Latin1 コードを印字するか否か</param>
-    public string GetDisplayString(bool showLatin1 = false)
+    public string GetDisplayString()
     {
         return !Filled
             ? NULL_LETTER
@@ -84,8 +83,8 @@ public struct CharData
                 < 0x20 => $"^{(char)(CodePoint + 0x40)}",
                 < 0x7F => $"{(char)CodePoint}",
                 0x7F => $"^{(char)(CodePoint - 0x40)}",
-                <= 0x9F => showLatin1 ? $"^{(char)(CodePoint + 0x40)}" : NON_LETTER,
-                <= 0xFF => showLatin1 ? $"{(char)CodePoint}" : NON_LETTER,
+                <= 0x9F => IsChar ? $"^{(char)(CodePoint + 0x40)}" : NON_LETTER,
+                <= 0xFF => IsChar ? $"{(char)CodePoint}" : NON_LETTER,
                 _ => char.ConvertFromUtf32(CodePoint)
             };
     }
@@ -95,10 +94,9 @@ public struct CharData
     /// </summary>
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
     /// <param name="cellLength">セル数。足りない場合は末尾に半角空白が埋められる</param>
-    /// <param name="showLatin1">0x80 - 0xFF の Latin1 コードを印字するか否か</param>
-    internal void PrintDisplayString(StringBuilder sb, int cellLength = 2, bool showLatin1 = false)
+    internal void PrintDisplayString(StringBuilder sb, int cellLength = 2)
     {
-        var str = GetDisplayString(showLatin1);
+        var str = GetDisplayString();
         var strCellLen = LengthInBufferCells(str);
         sb.Append(str);
         if (strCellLen < cellLength)

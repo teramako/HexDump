@@ -73,10 +73,10 @@ public class CharCollectionRow(long row)
     /// 表示文字列用の行を返す。
     /// </summary>
     /// <inheritdoc cref="PrintCharsRow(StringBuilder, string, int, bool)"/>
-    public string GetCharsRow(string separator = " ", int cellLength = 2, bool showLatin1 = false)
+    public string GetCharsRow(string separator = " ", int cellLength = 2)
     {
         StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
-        PrintCharsRow(sb, separator, cellLength, showLatin1);
+        PrintCharsRow(sb, separator, cellLength);
         return sb.ToString();
     }
 
@@ -86,7 +86,7 @@ public class CharCollectionRow(long row)
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
     /// <param name="separator">区切り文字列</param>
     /// <param name="cellLength">1データのセル数</param>
-    public void PrintCharsRow(StringBuilder sb, string separator = " ", int cellLength = 2, bool showLatin1 = false)
+    public void PrintCharsRow(StringBuilder sb, string separator = " ", int cellLength = 2)
     {
         for (var i = 0; i < RowData.Length; i++)
         {
@@ -94,7 +94,7 @@ public class CharCollectionRow(long row)
             {
                 sb.Append(separator);
             }
-            RowData[i].PrintDisplayString(sb, cellLength, showLatin1);
+            RowData[i].PrintDisplayString(sb, cellLength);
         }
     }
 
