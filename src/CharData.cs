@@ -139,5 +139,14 @@ public struct CharData
         // (c >= 0x30000 && c <= 0x3fffd)
         return 1 + (isWide ? 1 : 0);
     }
+
+    public override string ToString()
+    {
+        return !Filled
+            ? "<Empty>"
+            : IsChar
+              ? $"Byte: 0x{B:X2} CodePoint: U+{CodePoint:X8} <{UnicodeCategory}> {GetDisplayString}"
+              : $"Byte: 0x{B:X2}";
+    }
 }
 
