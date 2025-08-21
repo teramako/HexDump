@@ -18,8 +18,8 @@
             <Width>48</Width>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>C │1 │2 │3 │4 │5 │6 │7 │8 │9 │A │B │C │D │E │F</Label>
-            <Width>48</Width>
+            <Label>C 1 2 3 4 5 6 7 8 9 A B C D E F</Label>
+            <Width>32</Width>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
@@ -32,7 +32,7 @@
                 <PropertyName>Hex</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>$_.GetCharsRow('│', 2)</ScriptBlock>
+                <ScriptBlock>$_.GetCharsRow([string]::Empty, 2)</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>

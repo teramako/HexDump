@@ -98,11 +98,11 @@ public struct CharData
     {
         var str = GetDisplayString();
         var strCellLen = LengthInBufferCells(str);
-        sb.Append(str);
         if (strCellLen < cellLength)
         {
             sb.Append(' ', cellLength - strCellLen);
         }
+        sb.Append(str);
     }
 
     /// <summary>
