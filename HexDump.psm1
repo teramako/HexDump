@@ -28,6 +28,9 @@ function Write-HexDump
         [Parameter()]
         [ValidateSet('SplitHexAndChars', 'UnifyHexAndChars')]
         [string] $Format
+        ,
+        [Parameter()]
+        [switch] $Color
     )
 
     $dumpIter = switch ($PSCmdlet.ParameterSetName)
@@ -46,15 +49,15 @@ function Write-HexDump
     {
         'SplitHexAndChars'
         {
-            $dumpIter | Format-Table -View SplitHexAndChars
+            $dumpIter.SetColoring($Color) | Format-Table -View SplitHexAndChars
         }
         'UnifyHexAndChars'
         {
-            $dumpIter | Format-Table -View UnifyHexAndChars
+            $dumpIter.SetColoring($Color) | Format-Table -View UnifyHexAndChars
         }
         default
         {
-            Write-Output $dumpIter
+            Write-Output $dumpIter.SetColoring($Color)
         }
     }
 }
