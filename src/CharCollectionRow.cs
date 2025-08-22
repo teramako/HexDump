@@ -29,6 +29,19 @@ public class CharCollectionRow(long row)
     public string Row => $"0x{_row:X8}";
     public string Hex => GetHexRow();
 
+    private bool _coloring;
+
+    /// <summary>
+    /// ダンプ結果に色付けをする
+    /// </summary>
+    /// <param name="coloring"><c>true</c>: 色付けする; <c>false</c>: しない</param>
+    /// <returns>this instance</returns>
+    public CharCollectionRow SetColoring(bool coloring = true)
+    {
+        _coloring = coloring;
+        return this;
+    }
+
     /// <summary>
     /// バイトデータの16進数値行を返す。
     /// </summary>
@@ -36,7 +49,7 @@ public class CharCollectionRow(long row)
     public string GetHexRow(string separator = " ", int cellLength = 2)
     {
         StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
-        PrintHexRow(sb, separator, cellLength);
+        PrintHexRow(sb, separator, cellLength, _coloring);
         return sb.ToString();
     }
 
@@ -46,7 +59,8 @@ public class CharCollectionRow(long row)
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
     /// <param name="separator">区切り文字列</param>
     /// <param name="cellLength">1データのセル数</param>
-    public void PrintHexRow(StringBuilder sb, string separator = " ", int cellLength = 2)
+    /// <param name="coloring">色付けをするか否か</param>
+    public void PrintHexRow(StringBuilder sb, string separator = " ", int cellLength = 2, bool coloring = false)
     {
         var remainingCellCount = cellLength - 2;
         for (var i = 0; i < RowData.Length; i++)
@@ -54,9 +68,13 @@ public class CharCollectionRow(long row)
             if (i != 0)
             {
                 sb.Append(separator);
+                if (coloring)
+                    sb.Append($"\u001b[0m");
             }
             if (RowData[i].Filled)
             {
+                if (coloring)
+                    sb.Append(RGB.GetColorFromByte(RowData[i].B).ToTermBg());
                 sb.Append($"{RowData[i].B:X2}")
                   .Append(' ', remainingCellCount);
             }
