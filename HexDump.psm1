@@ -30,18 +30,18 @@ function Write-HexDump
         [string] $Format
         ,
         [Parameter()]
-        [switch] $Color
+        [MT.HexDump.ColorType] $Color = [MT.HexDump.ColorType]::None
     )
 
     $dumpIter = switch ($PSCmdlet.ParameterSetName)
     {
         'Data'
         {
-            [HexDumper]::HexDump($Data, $Encoding, $Offset, $Length)
+            [HexDumper]::HexDump($Data, $Encoding, $Offset, $Length, $Color)
         }
         'Stream'
         {
-            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length)
+            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length, $Color)
         }
     }
 
@@ -49,15 +49,15 @@ function Write-HexDump
     {
         'SplitHexAndChars'
         {
-            $dumpIter.SetColoring($Color) | Format-Table -View SplitHexAndChars
+            $dumpIter | Format-Table -View SplitHexAndChars
         }
         'UnifyHexAndChars'
         {
-            $dumpIter.SetColoring($Color) | Format-Table -View UnifyHexAndChars
+            $dumpIter | Format-Table -View UnifyHexAndChars
         }
         default
         {
-            Write-Output $dumpIter.SetColoring($Color)
+            Write-Output $dumpIter
         }
     }
 }
