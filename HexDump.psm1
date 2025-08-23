@@ -7,12 +7,14 @@ function Write-HexDump
     [OutputType([MT.HexDump.CharCollectionRow])]
     param(
         [Parameter(ParameterSetName="Data", Mandatory, ValueFromPipeline, Position = 0)]
+        [Alias('d')]
         [byte[]] $Data
         ,
         [Parameter(ParameterSetName="Stream", Mandatory, ValueFromPipeline, Position = 0)]
         [System.IO.Stream] $Stream
         ,
         [Parameter()]
+        [Alias('e')]
         [MT.HexDump.EncodingTransformation()]
         [ArgumentCompleter([MT.HexDump.EncodingArgumentCompleter])]
         [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
@@ -26,9 +28,11 @@ function Write-HexDump
         [int] $Length = 0
         ,
         [Parameter()]
+        [Alias('f')]
         [ValidateSet('SplitHexAndChars', 'UnifyHexAndChars')]
         [string] $Format
         ,
+        [Alias('c')]
         [Parameter()]
         [MT.HexDump.ColorType] $Color = [MT.HexDump.ColorType]::None
     )
