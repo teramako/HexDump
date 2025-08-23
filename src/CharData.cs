@@ -10,16 +10,17 @@ namespace MT.HexDump;
 /// （文字として表すのは先頭バイト値のみ）
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public struct CharData
+public struct CharData(byte b, Rune rune, CharType type)
 {
     /// <summary>
-    /// Unicode コードポイント
+    /// Unicode ルーン文字
     /// </summary>
-    public int CodePoint;
+    public readonly Rune Rune = rune;
+
     /// <summary>
     /// Byte data
     /// </summary>
-    public byte B;
+    public readonly byte B = b;
 
     /// <summary>
     /// バイト値の種類を表す。
@@ -59,7 +60,12 @@ public struct CharData
     ///     </item>
     /// </list>
     /// </summary>
-    public readonly CharType Type;
+    public readonly CharType Type = type;
+
+    /// <summary>
+    /// Unicode Code Point
+    /// </summary>
+    public int CodePoint => Rune.Value;
 
     /// <summary>
     /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
@@ -73,17 +79,14 @@ public struct CharData
     public bool IsChar => Type.HasFlag(CharType.Char);
 
     /// <summary>
-    /// 標準のコンストラクタ
+    /// Unicodeコードポイント指定のコンストラクタ
     /// </summary>
     /// <param name="b">そのポイントのバイトデータ</param>
     /// <param name="codePoint">Unicodeコードポイント。</param>
     /// <param name="type">バイト値の文字種</param>
     public CharData(byte b, int codePoint, CharType type)
-    {
-        B = b;
-        CodePoint = codePoint;
-        Type = type;
-    }
+        : this(b, new Rune(codePoint), type)
+    { }
 
     private const string NULL_LETTER = "  ";
     private const string NON_LETTER = "..";
@@ -93,18 +96,9 @@ public struct CharData
     /// <summary>
     /// コードポイントを単純に文字列化した値
     /// </summary>
-    public string RawString => Filled ? char.ConvertFromUtf32(CodePoint) : string.Empty;
+    public string RawString => Filled ? Rune.ToString()  : string.Empty;
 
-    public UnicodeCategory? UnicodeCategory
-    {
-        get
-        {
-            var str = RawString;
-            if (string.IsNullOrEmpty(str))
-                return null;
-            return char.GetUnicodeCategory(str, 0);
-        }
-    }
+    public UnicodeCategory? UnicodeCategory => Filled ? Rune.GetUnicodeCategory(Rune) : null;
 
     /// <summary>
     /// ダンプ結果の表示用の文字列を返す
@@ -115,15 +109,15 @@ public struct CharData
         {
             CharType.Empty => NULL_LETTER,
             CharType.Binary => NON_LETTER,
-            CharType.SingleByteChar => CodePoint switch
+            CharType.SingleByteChar => Rune.Value switch
             {
-                < 0x20 => $"^{(char)(CodePoint + 0x40)}",
-                < 0x7F => $"{(char)CodePoint}",
-                0x7F => $"^{(char)(CodePoint - 0x40)}",
-                < 0xA0 => $"^{(char)(CodePoint + 0x40)}",
-                _ => char.ConvertFromUtf32(CodePoint)
+                < 0x20 => $"^{(char)(Rune.Value + 0x40)}",
+                < 0x7F => $"{Rune}",
+                0x7F => $"^{(char)(Rune.Value - 0x40)}",
+                < 0xA0 => $"^{(char)(Rune.Value + 0x40)}",
+                _ => Rune.ToString()
             },
-            CharType.MultiByteChar => char.ConvertFromUtf32(CodePoint),
+            CharType.MultiByteChar => Rune.ToString(),
             CharType.ContinutionFirstByte or CharType.ContinutionFirstAndLastByte
                 => CONTINUTION_LETTER_FIRST,
             _ => CONTINUTION_LETTER
@@ -212,7 +206,7 @@ public struct CharData
         return !Filled
             ? "<Empty>"
             : IsChar
-              ? $"Byte: 0x{B:X2} CodePoint: U+{CodePoint:X8} <{UnicodeCategory}> {GetDisplayString()}"
+              ? $"Byte: 0x{B:X2} CodePoint: U+{Rune.Value:X8} <{UnicodeCategory}> {GetDisplayString()}"
               : $"Byte: 0x{B:X2}";
     }
 }
