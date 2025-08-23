@@ -60,7 +60,7 @@ internal class TopBytesFallback : DecoderFallback
         {
             foreach (var b in _bytesUnknown)
             {
-                yield return new CharData(b, (char)b, false);
+                yield return new CharData(b, (char)b, CharType.Binary);
             }
             Reset();
         }

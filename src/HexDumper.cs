@@ -183,12 +183,15 @@ public static class HexDumper
                     rune = char.ConvertFromUtf32((int)chars[i]);
                 }
                 byte byteCount = (byte)enc.GetByteCount(rune);
-                CharData charData = new(bytes[byteIndex], char.ConvertToUtf32(rune, 0), true);
+                int codePoint = char.ConvertToUtf32(rune, 0);
+                CharData charData = new(bytes[byteIndex], codePoint, byteCount > 1 ? CharType.MultiByteChar : CharType.SingleByteChar);
                 DebugPrint($"p={p:X8}: {charData}", ConsoleColor.Blue);
                 yield return charData;
                 for (var j = 1; j < byteCount; j++)
                 {
-                    yield return new CharData(bytes[byteIndex + j], -j, true);
+                    yield return new CharData(bytes[byteIndex + j], codePoint, CharType.ContinutionByte
+                                                                               | (j == 1 ? CharType.First : 0)
+                                                                               | (j == byteCount - 1 ? CharType.Last : 0));
                 }
                 p += byteCount;
                 byteIndex += byteCount;

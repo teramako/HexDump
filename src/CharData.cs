@@ -4,48 +4,85 @@ using System.Text;
 
 namespace MT.HexDump;
 
+/// <summary>
+/// バイト値の文字データを表す。
+/// マルチバイト文字においては、Unicodeコードポイント(UTF-32)で文字を示す。
+/// （文字として表すのは先頭バイト値のみ）
+/// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
 public struct CharData
 {
     /// <summary>
-    /// 基本的には Unicode コードポイント。
-    /// ただし、マイナス値の場合はマルチバイト文字における後続バイトであることを示す。
+    /// Unicode コードポイント
     /// </summary>
     public int CodePoint;
     /// <summary>
     /// Byte data
     /// </summary>
     public byte B;
+
+    /// <summary>
+    /// バイト値の種類を表す。
+    /// <list type="table">
+    ///     <listheader><term>Name</term><description>Description</description></listheader>
+    ///     <item>
+    ///         <term><see cref="CharType.Empty"/></term>
+    ///         <description>未割当。文字としてレンダリングされない。</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.Binary"/></term>
+    ///         <description>デコードできなかったバイト値。文字としてレンダリングされない。</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.SingleByteChar"/></term>
+    ///         <description>1バイト文字</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.MultiByteChar"/></term>
+    ///         <description>マルチバイトバイト文字</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.ContinutionByte"/></term>
+    ///         <description>マルチバイト文字の後続バイト。文字としてレンダリングされない。</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.ContinutionFirstByte"/></term>
+    ///         <description>マルチバイト文字の後続バイトの最初。文字としてレンダリングされない。</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.ContinutionFirstAndLastByte"/></term>
+    ///         <description>マルチバイト文字の後続バイトの最初と最後（2バイト文字の2番目を示すことになる）。文字としてレンダリングされない。</description>
+    ///     </item>
+    ///     <item>
+    ///         <term><see cref="CharType.ContinutionLastByte"/></term>
+    ///         <description>マルチバイト文字の後続バイトの最後。文字としてレンダリングされない。</description>
+    ///     </item>
+    /// </list>
+    /// </summary>
+    public readonly CharType Type;
+
     /// <summary>
     /// この構造体がバイトデータ、位置、コードポイントを定めた値(デフォルト値ではない)であることを示すフラグ
     /// </summary>
-    private byte _filled;
-    private byte _isChar;
-    internal bool Filled => _filled > 0;
+    internal bool Filled => Type is not CharType.Empty;
 
     /// <summary>
     /// 文字データであるか否か。
     /// （マルチバイト文字の後続バイト値のデータは除外される）
     /// </summary>
-    public bool IsChar => CodePoint >= 0 && _isChar > 0;
+    public bool IsChar => Type.HasFlag(CharType.Char);
 
     /// <summary>
     /// 標準のコンストラクタ
     /// </summary>
     /// <param name="b">そのポイントのバイトデータ</param>
-    /// <param name="codePoint">
-    /// Unicodeコードポイント。マイナス値にするとマルチバイト文字における後続バイトであることになる
-    /// </param>
-    /// <param name="isChar">デコードできた文字か否か</param>
-    public CharData(byte b, int codePoint, bool isChar = false)
+    /// <param name="codePoint">Unicodeコードポイント。</param>
+    /// <param name="type">バイト値の文字種</param>
+    public CharData(byte b, int codePoint, CharType type)
     {
         B = b;
         CodePoint = codePoint;
-        _filled = 1;
-        if (isChar)
-        {
-            _isChar = 1;
-        }
+        Type = type;
     }
 
     private const string NULL_LETTER = "  ";
@@ -56,7 +93,7 @@ public struct CharData
     /// <summary>
     /// コードポイントを単純に文字列化した値
     /// </summary>
-    public string RawString => IsChar ? char.ConvertFromUtf32(CodePoint) : string.Empty;
+    public string RawString => Filled ? char.ConvertFromUtf32(CodePoint) : string.Empty;
 
     public UnicodeCategory? UnicodeCategory
     {
@@ -74,19 +111,23 @@ public struct CharData
     /// </summary>
     public string GetDisplayString()
     {
-        return !Filled
-            ? NULL_LETTER
-            : CodePoint switch
+        return Type switch
+        {
+            CharType.Empty => NULL_LETTER,
+            CharType.Binary => NON_LETTER,
+            CharType.SingleByteChar => CodePoint switch
             {
-                -1 => CONTINUTION_LETTER_FIRST,
-                < 0 => CONTINUTION_LETTER,
                 < 0x20 => $"^{(char)(CodePoint + 0x40)}",
                 < 0x7F => $"{(char)CodePoint}",
                 0x7F => $"^{(char)(CodePoint - 0x40)}",
-                <= 0x9F => IsChar ? $"^{(char)(CodePoint + 0x40)}" : NON_LETTER,
-                <= 0xFF => IsChar ? $"{(char)CodePoint}" : NON_LETTER,
+                < 0xA0 => $"^{(char)(CodePoint + 0x40)}",
                 _ => char.ConvertFromUtf32(CodePoint)
-            };
+            },
+            CharType.MultiByteChar => char.ConvertFromUtf32(CodePoint),
+            CharType.ContinutionFirstByte or CharType.ContinutionFirstAndLastByte
+                => CONTINUTION_LETTER_FIRST,
+            _ => CONTINUTION_LETTER
+        };
     }
 
     /// <summary>
@@ -98,11 +139,17 @@ public struct CharData
     {
         var str = GetDisplayString();
         var strCellLen = LengthInBufferCells(str);
+        sb.Append(str);
         if (strCellLen < cellLength)
         {
-            sb.Append(' ', cellLength - strCellLen);
+            sb.Append(Type switch
+            {
+                CharType.Empty => NULL_LETTER[1],
+                CharType.Binary => NON_LETTER[1],
+                CharType.SingleByteChar or CharType.MultiByteChar => ' ',
+                _ => str[1]
+            }, cellLength - strCellLen);
         }
-        sb.Append(str);
     }
 
     /// <summary>
