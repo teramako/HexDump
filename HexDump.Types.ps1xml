@@ -31,4 +31,27 @@
       </ScriptProperty>
     </Members>
   </Type>
+  <Type>
+    <Name>MT.HexDump.CharCollectionRow</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Row</Name>
+              <Name>ColorType</Name>
+              <Name>Hex</Name>
+              <Name>Chars</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+      <ScriptProperty>
+        <Name>List</Name>
+        <GetScriptBlock>[OutputType([MT.HexDump.CharData])]param() $this.GetEnumerator()</GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
 </Types>
