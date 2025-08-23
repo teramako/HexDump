@@ -12,6 +12,7 @@
             <ReferencedProperties>
               <Name>Byte</Name>
               <Name>CodePoint</Name>
+              <Name>Rune</Name>
               <Name>DisplayString</Name>
               <Name>IsChar</Name>
               <Name>Type</Name>
