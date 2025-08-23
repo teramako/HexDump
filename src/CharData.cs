@@ -212,7 +212,7 @@ public struct CharData
         return !Filled
             ? "<Empty>"
             : IsChar
-              ? $"Byte: 0x{B:X2} CodePoint: U+{CodePoint:X8} <{UnicodeCategory}> {GetDisplayString}"
+              ? $"Byte: 0x{B:X2} CodePoint: U+{CodePoint:X8} <{UnicodeCategory}> {GetDisplayString()}"
               : $"Byte: 0x{B:X2}";
     }
 }
