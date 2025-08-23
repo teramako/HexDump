@@ -137,6 +137,20 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
         }
     }
 
+    /// <summary>
+    /// 各 <see cref="RowData"/> のHex行とChars行を改行で区切った2行にして返す。
+    /// </summary>
+    /// <param name="separator">区切り文字列</param>
+    /// <param name="cellLength">1データのセル数</param>
+    public string GetHexAndCharsRow(string separator = " ", int cellLength = 2)
+    {
+        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length) * 2);
+        PrintHexRow(sb, separator, cellLength);
+        sb.AppendLine();
+        PrintCharsRow(sb, separator, cellLength);
+        return sb.ToString();
+    }
+
     public int Count => IsEmpty ? 0 : RowData.Count(static c => c.Filled);
 }
 

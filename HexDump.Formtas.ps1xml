@@ -62,12 +62,7 @@
                 <PropertyName>Row</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>
-                $sb = [System.Text.StringBuilder]::new();
-                $_.PrintHexRow($sb, ' ', 3);
-                $_.PrintCharsRow($sb.Append("`n"), ' ', 3);
-                $sb.ToString();
-                </ScriptBlock>
+                <ScriptBlock>$_.GetHexAndCharsRow('', 3)</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
