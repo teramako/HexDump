@@ -5,7 +5,7 @@ namespace MT.HexDump;
 /// <summary>
 /// <see cref="CharData"/> 16個を入れた行
 /// </summary>
-public class CharCollectionRow(long row)
+public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
 {
     internal CharData[] RowData = new CharData[16];
     private long _row = row & 0x7FFFFFF0;
@@ -29,18 +29,10 @@ public class CharCollectionRow(long row)
     public string Row => $"0x{_row:X8}";
     public string Hex => GetHexRow();
 
-    private bool _coloring;
-
     /// <summary>
-    /// ダンプ結果に色付けをする
+    /// ダンプ結果の色付けに使用するカラータイプ
     /// </summary>
-    /// <param name="coloring"><c>true</c>: 色付けする; <c>false</c>: しない</param>
-    /// <returns>this instance</returns>
-    public CharCollectionRow SetColoring(bool coloring = true)
-    {
-        _coloring = coloring;
-        return this;
-    }
+    public ColorType ColorType { get; set; } = colorType;
 
     /// <summary>
     /// バイトデータの16進数値行を返す。
@@ -49,7 +41,7 @@ public class CharCollectionRow(long row)
     public string GetHexRow(string separator = " ", int cellLength = 2)
     {
         StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
-        PrintHexRow(sb, separator, cellLength, _coloring);
+        PrintHexRow(sb, separator, cellLength);
         return sb.ToString();
     }
 
@@ -59,23 +51,22 @@ public class CharCollectionRow(long row)
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
     /// <param name="separator">区切り文字列</param>
     /// <param name="cellLength">1データのセル数</param>
-    /// <param name="coloring">色付けをするか否か</param>
-    public void PrintHexRow(StringBuilder sb, string separator = " ", int cellLength = 2, bool coloring = false)
+    public void PrintHexRow(StringBuilder sb, string separator = " ", int cellLength = 2)
     {
         var remainingCellCount = cellLength - 2;
         for (var i = 0; i < RowData.Length; i++)
         {
+            CharData c = RowData[i];
             if (i != 0)
             {
                 sb.Append(separator);
-                if (coloring)
-                    sb.Append($"\u001b[0m");
+                if (ColorType is not ColorType.None)
+                    sb.Append(Color.Reset);
             }
-            if (RowData[i].Filled)
+            if (c.Filled)
             {
-                if (coloring)
-                    sb.Append(RGB.GetColorFromByte(RowData[i].B).ToTermBg());
-                sb.Append($"{RowData[i].B:X2}")
+                c.PrintColor(sb, ColorType);
+                sb.Append($"{c.B:X2}")
                   .Append(' ', remainingCellCount);
             }
             else
@@ -108,11 +99,22 @@ public class CharCollectionRow(long row)
     {
         for (var i = 0; i < RowData.Length; i++)
         {
+            CharData c = RowData[i];
             if (i != 0)
             {
                 sb.Append(separator);
+                if (ColorType is not ColorType.None)
+                    sb.Append(Color.Reset);
             }
-            RowData[i].PrintDisplayString(sb, cellLength);
+            if (c.Filled)
+            {
+                c.PrintColor(sb, ColorType);
+                c.PrintDisplayString(sb, cellLength);
+            }
+            else
+            {
+                sb.Append(' ', cellLength);
+            }
         }
     }
 

@@ -14,11 +14,18 @@ public static class HexDumper
         Console.ForegroundColor = c;
     }
 
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, long offset = 0, int length = 0)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data,
+                                                         long offset = 0,
+                                                         int length = 0,
+                                                         ColorType colorType = ColorType.None)
     {
-        return HexDump(data, Encoding.UTF8, offset, length);
+        return HexDump(data, Encoding.UTF8, offset, length, colorType);
     }
-    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data, Encoding encoding, long offset = 0, int length = 0)
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data,
+                                                         Encoding encoding,
+                                                         long offset = 0,
+                                                         int length = 0,
+                                                         ColorType colorType = ColorType.None)
     {
         if (data.Length < offset)
         {
@@ -33,7 +40,7 @@ public static class HexDumper
             : data.Slice((int)offset);
         long position = offset;
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
-        CharCollectionRow charDatas = new(position);
+        CharCollectionRow charDatas = new(position, colorType);
         DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
         foreach (var charData in HexDumpCore(targetData, enc))
         {
@@ -41,7 +48,7 @@ public static class HexDumper
             if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new(position + 1);
+                charDatas = new(position + 1, colorType);
             }
             position++;
         }
@@ -51,17 +58,21 @@ public static class HexDumper
         }
     }
 
-    public static IEnumerable<CharCollectionRow> HexDump(Stream stream, Encoding encoding, long offset = 0, int length = 0)
+    public static IEnumerable<CharCollectionRow> HexDump(Stream stream,
+                                                         Encoding encoding,
+                                                         long offset = 0,
+                                                         int length = 0,
+                                                         ColorType colorType = ColorType.None)
     {
         long position = offset;
-        CharCollectionRow charDatas = new(position);
+        CharCollectionRow charDatas = new(position, colorType);
         foreach (var charData in HexDumpStream(stream, encoding, offset, length))
         {
             charDatas.Set(position, charData);
             if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new(position + 1);
+                charDatas = new(position + 1, colorType);
             }
             position++;
         }
@@ -71,7 +82,10 @@ public static class HexDumper
         }
     }
 
-    public static IEnumerable<CharData> HexDumpStream(Stream stream, Encoding encoding, long offset = 0, int length = 0)
+    public static IEnumerable<CharData> HexDumpStream(Stream stream,
+                                                      Encoding encoding,
+                                                      long offset = 0,
+                                                      int length = 0)
     {
         const int BUFFER_LENGTH = 1024;
         var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
