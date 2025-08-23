@@ -70,15 +70,4 @@ public record struct RGB
     {
         return $"\u001b[48;2;{R};{G};{B}m";
     }
-
-    /// <summary>
-    /// バイト値に対応するRGB値を返す。
-    /// </summary>
-    /// <param name="b">バイト値。HLSカラーの色相 (Hue)にマッピングされる。0 - 255</param>
-    /// <param name="l">輝度 (Lightness) 0 - 100</param>
-    /// <param name="s">彩度 (Saturation) 0 - 100</param>
-    public static RGB GetColorFromByte(byte b, int l = 40, int s = 60)
-    {
-        return FromHLS((int)(b * 360.0 / 0xFF), l, s);
-    }
 }

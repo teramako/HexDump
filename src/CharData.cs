@@ -187,6 +187,26 @@ public struct CharData
         return 1 + (isWide ? 1 : 0);
     }
 
+    /// <summary>
+    /// <paramref name="colorType"/> に応じた色(エスケープシーケンス)を <paramref name="sb"/> へ書き込む
+    /// </summary>
+    /// <param name="sb">StringBuilder</param>
+    /// <param name="colorType"></param>
+    internal void PrintColor(StringBuilder sb, ColorType colorType)
+    {
+        var escapeSequence = colorType switch
+        {
+            ColorType.ByByte => Color.GetColorFromByte(B),
+            ColorType.ByCharType => Color.GetFromCharType(Type, CodePoint),
+            ColorType.ByUnicodeCategory => Color.GetFromUnicodeCategory(UnicodeCategory),
+            _ => string.Empty
+        };
+        if (string.IsNullOrEmpty(escapeSequence))
+            return;
+
+        sb.Append(escapeSequence);
+    }
+
     public override string ToString()
     {
         return !Filled
