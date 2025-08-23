@@ -87,12 +87,12 @@
           <TableColumnHeader>
             <Label>CodePoint</Label>
           </TableColumnHeader>
-          <TableColumnHeader /><!-- IsChar -->
-          <TableColumnHeader /><!-- UnicodeCategory -->
-          <TableColumnHeader /><!-- RawString -->
           <TableColumnHeader>
             <Label>DisplayString</Label>
           </TableColumnHeader>
+          <TableColumnHeader /><!-- IsChar -->
+          <TableColumnHeader /><!-- Type -->
+          <TableColumnHeader /><!-- UnicodeCategory -->
         </TableHeaders>
         <TableRowEntries>
           <TableRowEntry>
@@ -105,17 +105,19 @@
                 <ScriptBlock>if ($_.IsChar){ "U+{0:X8}" -f $_.CodePoint }</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
+                <ScriptBlock>if ($_.IsChar) { $_.GetDisplayString() }</ScriptBlock>
+              </TableColumnItem>
+              <TableColumnItem>
                 <PropertyName>IsChar</PropertyName>
                 <Alignment>Right</Alignment>
               </TableColumnItem>
               <TableColumnItem>
+                <PropertyName>Type</PropertyName>
+                <Alignment>Right</Alignment>
+              </TableColumnItem>
+              <TableColumnItem>
                 <PropertyName>UnicodeCategory</PropertyName>
-              </TableColumnItem>
-              <TableColumnItem>
-                <PropertyName>RawString</PropertyName>
-              </TableColumnItem>
-              <TableColumnItem>
-                <ScriptBlock>if ($_.IsChar) { $_.GetDisplayString() }</ScriptBlock>
+                <Alignment>Right</Alignment>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
