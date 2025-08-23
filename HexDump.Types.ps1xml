@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Types xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/PowerShell/PowerShell/master/src/Schemas/Types.xsd">
+  <Type>
+    <Name>MT.HexDump.CharData</Name>
+    <Members>
+      <MemberSet>
+        <Name>PSStandardMembers</Name>
+        <Members>
+          <PropertySet>
+            <Name>DefaultDisplayPropertySet</Name>
+            <ReferencedProperties>
+              <Name>Byte</Name>
+              <Name>CodePoint</Name>
+              <Name>DisplayString</Name>
+              <Name>IsChar</Name>
+              <Name>Type</Name>
+              <Name>UnicodeCategory</Name>
+            </ReferencedProperties>
+          </PropertySet>
+        </Members>
+      </MemberSet>
+      <AliasProperty>
+        <Name>Byte</Name>
+        <ReferencedMemberName>B</ReferencedMemberName>
+        <TypeName>byte</TypeName>
+      </AliasProperty>
+      <ScriptProperty>
+        <Name>DisplayString</Name>
+        <GetScriptBlock>[OutputType([string])]param() if ($this.IsChar) { $this.GetDisplayString() }</GetScriptBlock>
+      </ScriptProperty>
+    </Members>
+  </Type>
+</Types>

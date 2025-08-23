@@ -87,9 +87,7 @@
           <TableColumnHeader>
             <Label>CodePoint</Label>
           </TableColumnHeader>
-          <TableColumnHeader>
-            <Label>DisplayString</Label>
-          </TableColumnHeader>
+          <TableColumnHeader /><!-- DisplayString -->
           <TableColumnHeader /><!-- IsChar -->
           <TableColumnHeader /><!-- Type -->
           <TableColumnHeader /><!-- UnicodeCategory -->
@@ -105,7 +103,7 @@
                 <ScriptBlock>if ($_.IsChar){ "U+{0:X8}" -f $_.CodePoint }</ScriptBlock>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>if ($_.IsChar) { $_.GetDisplayString() }</ScriptBlock>
+                <PropertyName>DisplayString</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
                 <PropertyName>IsChar</PropertyName>
