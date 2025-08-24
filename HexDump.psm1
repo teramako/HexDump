@@ -13,6 +13,9 @@ function Write-HexDump
         [Parameter(ParameterSetName="Stream", Mandatory, ValueFromPipeline, Position = 0)]
         [System.IO.Stream] $Stream
         ,
+        [Parameter(ParameterSetName="Path", Mandatory, ValueFromPipeline, Position = 0)]
+        [string] $Path
+        ,
         [Parameter()]
         [Alias('e')]
         [MT.HexDump.EncodingTransformation()]
@@ -32,8 +35,8 @@ function Write-HexDump
         [ValidateSet('SplitHexAndChars', 'UnifyHexAndChars')]
         [string] $Format
         ,
-        [Alias('c')]
         [Parameter()]
+        [Alias('c')]
         [MT.HexDump.ColorType] $Color = [MT.HexDump.ColorType]::None
     )
 
@@ -47,21 +50,37 @@ function Write-HexDump
         {
             [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length, $Color)
         }
+        'Path'
+        {
+            $file = Get-Item -LiteralPath $Path -Force
+            $Stream = $file.OpenRead()
+            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length, $Color)
+        }
     }
 
-    switch ($Format)
+    try
     {
-        'SplitHexAndChars'
+        switch ($Format)
         {
-            $dumpIter | Format-Table -View SplitHexAndChars
+            'SplitHexAndChars'
+            {
+                $dumpIter | Format-Table -View SplitHexAndChars
+            }
+            'UnifyHexAndChars'
+            {
+                $dumpIter | Format-Table -View UnifyHexAndChars
+            }
+            default
+            {
+                Write-Output $dumpIter
+            }
         }
-        'UnifyHexAndChars'
+    }
+    finally
+    {
+        if ($null -ne $Stream)
         {
-            $dumpIter | Format-Table -View UnifyHexAndChars
-        }
-        default
-        {
-            Write-Output $dumpIter
+            $Stream.Dispose()
         }
     }
 }
