@@ -14,6 +14,10 @@ build: $(DLL) ## Build C# Projects
 test: build ## Build and Run tests
 	@$(PWSH) -File test/test.ps1
 
+.PHONY: docs
+docs: ## Build documents
+	@$(PWSH) -File ./docs/Make-Docs.ps1 -Locale ja-JP -Verbose
+
 .PHONY: help
 help: ## Display this help
 	@echo "Targets:"
