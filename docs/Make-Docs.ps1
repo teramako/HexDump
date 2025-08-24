@@ -17,8 +17,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ErrorView = 'DetailedView'
 
-$platyPSModulePath = Get-Item -Path ~/var/powershell/platyPS/out/Microsoft.PowerShell.PlatyPS
-Import-Module $platyPSModulePath -Verbose:$false
+Import-Module Microsoft.PowerShell.PlatyPS -Verbose:$false
 
 $moduleName = "HexDump"
 $module = Get-Module $moduleName
