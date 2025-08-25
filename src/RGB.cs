@@ -44,7 +44,7 @@ public record struct RGB
             min = l - (s * l / 100.0);
         }
 
-        h = (h + 240) % 360;
+        h = Math.Abs(h) % 360;
 
         (r, g, b) = h switch
         {
