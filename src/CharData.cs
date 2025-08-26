@@ -88,11 +88,6 @@ public struct CharData(byte b, Rune rune, CharType type)
         : this(b, new Rune(codePoint), type)
     { }
 
-    private const string NULL_LETTER = "  ";
-    private const string NON_LETTER = "..";
-    private const string CONTINUTION_LETTER_FIRST = "←─";
-    private const string CONTINUTION_LETTER = "──";
-
     /// <summary>
     /// コードポイントを単純に文字列化した値
     /// </summary>
@@ -123,21 +118,78 @@ public struct CharData(byte b, Rune rune, CharType type)
     /// ダンプ結果の表示用の文字列を <paramref name="sb"/> へ書き込む
     /// </summary>
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
+    /// <param name="config">各種設定値</param>
     /// <param name="cellLength">セル数。足りない場合は末尾に半角空白が埋められる</param>
-    internal void PrintDisplayString(StringBuilder sb, int cellLength = 2)
+    internal void PrintDisplayString(StringBuilder sb, Config config, int cellLength)
     {
-        var str = GetDisplayString();
-        var strCellLen = LengthInBufferCells(str);
-        sb.Append(str);
-        if (strCellLen < cellLength)
+        var str = Type switch
         {
-            sb.Append(Type switch
+            CharType.Empty => new string(config.NullLeter, cellLength),
+            CharType.Binary => new string(config.NonLetter, cellLength),
+            CharType.SingleByteChar => Rune.Value switch
             {
-                CharType.Empty => NULL_LETTER[1],
-                CharType.Binary => NON_LETTER[1],
-                CharType.SingleByteChar or CharType.MultiByteChar => ' ',
-                _ => str[1]
-            }, cellLength - strCellLen);
+                < 0x20 => $"{config.AsciiControlLetters[Rune.Value]}",
+                < 0x7F => $"{Rune}",
+                0x7F => $"{config.AsciiControlLetters[0x21]}",
+                < 0xA0 => $"^{(char)(Rune.Value + 0x40)}",
+                _ => Rune.ToString()
+            },
+            CharType.MultiByteChar => Rune.ToString(),
+            CharType.ContinutionFirstByte => Rune.ToString(),
+            CharType.ContinutionFirstAndLastByte => Rune.ToString(),
+            CharType.ContinutionLastByte => Rune.ToString(),
+            CharType.ContinutionByte => Rune.ToString(),
+            _ => new string(config.NullLeter, cellLength)
+        };
+        var strCellLen = LengthInBufferCells(str);
+        switch (Type)
+        {
+            case CharType.MultiByteChar when cellLength > strCellLen:
+                sb.Append($"{str}{config.ContinutionLetters[0]}")
+                  .Append(config.ContinutionLetters[1], cellLength - strCellLen - 1);
+                break;
+            case CharType.ContinutionFirstByte:
+                if (cellLength > strCellLen)
+                {
+                    sb.Append(config.ContinutionLetters[1], cellLength);
+                }
+                else
+                {
+                    sb.Append(config.ContinutionLetters[0])
+                      .Append(config.ContinutionLetters[1], cellLength - 1);
+                }
+                break;
+            case CharType.ContinutionFirstAndLastByte:
+                if (cellLength > strCellLen)
+                {
+                    sb.Append(config.ContinutionLetters[1], cellLength - 1)
+                      .Append(config.ContinutionLetters[2]);
+                }
+                else
+                {
+                    sb.Append(config.ContinutionLetters[0])
+                      .Append(config.ContinutionLetters[1], cellLength - 2)
+                      .Append(config.ContinutionLetters[2]);
+                }
+                break;
+            case CharType.ContinutionLastByte:
+                sb.Append(config.ContinutionLetters[1], cellLength -1)
+                  .Append(config.ContinutionLetters[2]);
+                break;
+            case CharType.ContinutionByte:
+                sb.Append(config.ContinutionLetters[1], cellLength);
+                break;
+            default:
+                sb.Append(str);
+                if (strCellLen < cellLength)
+                {
+                    sb.Append(Type switch
+                    {
+                        CharType.SingleByteChar => ' ',
+                        _ => str[^1]
+                    }, cellLength - strCellLen);
+                }
+                break;
         }
     }
 
@@ -180,10 +232,10 @@ public struct CharData(byte b, Rune rune, CharType type)
     /// <paramref name="colorType"/> に応じた色(エスケープシーケンス)を <paramref name="sb"/> へ書き込む
     /// </summary>
     /// <param name="sb">StringBuilder</param>
-    /// <param name="colorType"></param>
-    internal void PrintColor(StringBuilder sb, ColorType colorType)
+    /// <param name="config">各種設定値</param>
+    internal void PrintColor(StringBuilder sb, Config config)
     {
-        var escapeSequence = colorType switch
+        var escapeSequence = config.ColorType switch
         {
             ColorType.ByByte => Color.GetColorFromByte(B),
             ColorType.ByCharType => Color.GetFromCharType(Type, CodePoint),

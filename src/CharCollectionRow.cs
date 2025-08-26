@@ -5,7 +5,7 @@ namespace MT.HexDump;
 /// <summary>
 /// <see cref="CharData"/> 16個を入れた行
 /// </summary>
-public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
+public class CharCollectionRow(long row, Config config)
 {
     internal CharData[] RowData = new CharData[16];
     private long _row = row & 0x7FFFFFF0;
@@ -29,28 +29,28 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
     public string Row => $"0x{_row:X8}";
 
     /// <summary>
-    /// ダンプ結果の色付けに使用するカラータイプ
+    /// 各種設定値
     /// </summary>
-    public ColorType ColorType { get; set; } = colorType;
+    public Config Config { get; set; } = config;
 
     public string Hex => GetHexRow();
 
     /// <remarks>
     /// 配色設定はこのインスタンスに設定された <see cref="ColorType"/> が用いられる
     /// </remarks>
-    /// <inheritdoc cref="GetHexRow(ColorType, string, int)"/>
-    public string GetHexRow(string separator = " ", int cellLength = 2)
+    /// <inheritdoc cref="GetHexRow(Config, int)"/>
+    public string GetHexRow(int cellLength = 3)
     {
-        return GetHexRow(ColorType, separator, cellLength);
+        return GetHexRow(Config, cellLength);
     }
     /// <summary>
     /// バイトデータの16進数値行を返す。
     /// </summary>
-    /// <inheritdoc cref="PrintHexRow(StringBuilder, ColorType, string, int)"/>
-    public string GetHexRow(ColorType colorType, string separator = " ", int cellLength = 2)
+    /// <inheritdoc cref="PrintHexRow(StringBuilder, Config, int)"/>
+    public string GetHexRow(Config config, int cellLength)
     {
-        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
-        PrintHexRow(sb, colorType, separator, cellLength);
+        StringBuilder sb = new(RowData.Length * (cellLength + config.HexColumnSeparator.Length));
+        PrintHexRow(sb, config, cellLength);
         return sb.ToString();
     }
 
@@ -58,24 +58,24 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
     /// 各バイトデータの16進数値を <paramref name="sb"/> に書き込む
     /// </summary>
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
-    /// <param name="colorType">配色設定</param>
-    /// <param name="separator">区切り文字列</param>
+    /// <param name="config">各種設定値</param>
     /// <param name="cellLength">1データのセル数</param>
-    private void PrintHexRow(StringBuilder sb, ColorType colorType, string separator = " ", int cellLength = 2)
+    private void PrintHexRow(StringBuilder sb, Config config, int cellLength)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(cellLength, 2, nameof(cellLength));
         var remainingCellCount = cellLength - 2;
         for (var i = 0; i < RowData.Length; i++)
         {
             CharData c = RowData[i];
             if (i != 0)
             {
-                sb.Append(separator);
-                if (colorType is not ColorType.None)
+                if (config.ColorType is not ColorType.None)
                     sb.Append(Color.Reset);
+                sb.Append(config.HexColumnSeparator);
             }
             if (c.Filled)
             {
-                c.PrintColor(sb, colorType);
+                c.PrintColor(sb, config);
                 sb.Append($"{c.B:X2}")
                   .Append(' ', remainingCellCount);
             }
@@ -86,24 +86,24 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
         }
     }
 
-    public string Chars => GetCharsRow(" ");
+    public string Chars => GetCharsRow();
 
     /// <remarks>
     /// 配色設定はこのインスタンスに設定された <see cref="ColorType"/> が用いられる
     /// </remarks>
-    /// <inheritdoc cref="GetCharsRow(ColorType, string, int)"/>
-    public string GetCharsRow(string separator = " ", int cellLength = 2)
+    /// <inheritdoc cref="GetCharsRow(Config, int)"/>
+    public string GetCharsRow(int cellLength = 2)
     {
-        return GetCharsRow(ColorType, separator, cellLength);
+        return GetCharsRow(Config, cellLength);
     }
     /// <summary>
     /// 表示文字列用の行を返す。
     /// </summary>
-    /// <inheritdoc cref="PrintCharsRow(StringBuilder, string, int, bool)"/>
-    public string GetCharsRow(ColorType colorType, string separator = " ", int cellLength = 2)
+    /// <inheritdoc cref="PrintCharsRow(StringBuilder, Config, int)"/>
+    public string GetCharsRow(Config config, int cellLength)
     {
-        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length));
-        PrintCharsRow(sb, colorType, separator, cellLength);
+        StringBuilder sb = new(RowData.Length * (cellLength + config.CharColumnSeparator.Length));
+        PrintCharsRow(sb, config, cellLength);
         return sb.ToString();
     }
 
@@ -111,24 +111,23 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
     /// 各バイトデータの文字列化した値を <paramref name="sb"/> に追加する
     /// </summary>
     /// <param name="sb">値を追加する <see cref="StringBuilder"/> インタンス</param>
-    /// <param name="colorType">配色設定</param>
-    /// <param name="separator">区切り文字列</param>
     /// <param name="cellLength">1データのセル数</param>
-    private void PrintCharsRow(StringBuilder sb, ColorType colorType, string separator = " ", int cellLength = 2)
+    private void PrintCharsRow(StringBuilder sb, Config config, int cellLength)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(cellLength, 2, nameof(cellLength));
         for (var i = 0; i < RowData.Length; i++)
         {
             CharData c = RowData[i];
             if (i != 0)
             {
-                sb.Append(separator);
-                if (colorType is not ColorType.None)
+                if (config.ColorType is not ColorType.None)
                     sb.Append(Color.Reset);
+                sb.Append(config.CharColumnSeparator);
             }
             if (c.Filled)
             {
-                c.PrintColor(sb, colorType);
-                c.PrintDisplayString(sb, cellLength);
+                c.PrintColor(sb, config);
+                c.PrintDisplayString(sb, config, cellLength);
             }
             else
             {
@@ -140,23 +139,26 @@ public class CharCollectionRow(long row, ColorType colorType = ColorType.None)
     /// <remarks>
     /// 配色設定はこのインスタンスに設定された <see cref="ColorType"/> が用いられる
     /// </remarks>
-    /// <inheritdoc cref="GetHexAndCharsRow(ColorType, string, int)"/>
-    public string GetHexAndCharsRow(string separator = " ", int cellLength = 2)
+    /// <inheritdoc cref="GetHexAndCharsRow(Config, int)"/>
+    public string GetHexAndCharsRow(int cellLength = 3)
     {
-        return GetHexAndCharsRow(ColorType, separator, cellLength);
+        return GetHexAndCharsRow(Config, cellLength);
     }
     /// <summary>
     /// 各 <see cref="RowData"/> のHex行とChars行を改行で区切った2行にして返す。
     /// </summary>
-    /// <param name="colorType">配色設定</param>
-    /// <param name="separator">区切り文字列</param>
     /// <param name="cellLength">1データのセル数</param>
-    public string GetHexAndCharsRow(ColorType colorType, string separator = " ", int cellLength = 2)
+    public string GetHexAndCharsRow(Config config, int cellLength)
     {
-        StringBuilder sb = new(RowData.Length * (cellLength + separator.Length) * 2);
-        PrintHexRow(sb, colorType, separator, cellLength);
+        (int hexSepLen, int charSepLen) = (config.HexColumnSeparator.Length, config.CharColumnSeparator.Length);
+        int maxSepLen = Math.Max(hexSepLen, charSepLen);
+        int hexCellLen = (maxSepLen + cellLength) - hexSepLen;
+        int charCellLen = (maxSepLen + cellLength) - charSepLen;
+
+        StringBuilder sb = new(RowData.Length * (cellLength + maxSepLen) * 2);
+        PrintHexRow(sb, config, hexCellLen);
         sb.AppendLine();
-        PrintCharsRow(sb, colorType, separator, cellLength);
+        PrintCharsRow(sb, config, charCellLen);
         return sb.ToString();
     }
 

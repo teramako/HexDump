@@ -21,11 +21,32 @@ public static class HexDumper
     {
         return HexDump(data, Encoding.UTF8, offset, length, colorType);
     }
+    /// <summary>
+    /// バイトデータのダンプを行う
+    /// </summary>
+    /// <param name="data">バイトデータ</param>
+    /// <param name="encoding">バイトデータのデコードを試行する文字エンコーディング</param>
+    /// <param name="offset">ダンプを開始する位置</param>
+    /// <param name="length">ダンプを行う開始位置からの長さ</param>
+    /// <param name="colorType">配色設定</param>
     public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data,
                                                          Encoding encoding,
                                                          long offset = 0,
                                                          int length = 0,
                                                          ColorType colorType = ColorType.None)
+    {
+        Config config = (Config)Config.Default.Clone();
+        config.Encoding = encoding;
+        config.ColorType = colorType;
+        return HexDump(data, config, offset, length);
+    }
+
+    /// <inheritdoc cref="HexDump(ReadOnlyMemory{byte}, Encoding, long, int, ColorType)"/>
+    /// <param name="config">HexDump用の各種設定オブジェクト</param>
+    public static IEnumerable<CharCollectionRow> HexDump(ReadOnlyMemory<byte> data,
+                                                         Config config,
+                                                         long offset = 0,
+                                                         int length = 0)
     {
         if (data.Length < offset)
         {
@@ -39,8 +60,8 @@ public static class HexDumper
             ? data.Slice((int)offset, length)
             : data.Slice((int)offset);
         long position = offset;
-        var enc = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
-        CharCollectionRow charDatas = new(position, colorType);
+        var enc = Encoding.GetEncoding(config.Encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
+        CharCollectionRow charDatas = new(position, config);
         DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
         foreach (var charData in HexDumpCore(targetData, enc))
         {
@@ -48,7 +69,7 @@ public static class HexDumper
             if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new(position + 1, colorType);
+                charDatas = new(position + 1, config);
             }
             position++;
         }
@@ -58,21 +79,42 @@ public static class HexDumper
         }
     }
 
+    /// <summary>
+    /// <paramref name="stream"/> のダンプを行う
+    /// </summary>
+    /// <param name="stream">ダンプ対象のストリーム</param>
+    /// <param name="encoding">バイトデータのデコードを試行する文字エンコーディング</param>
+    /// <param name="offset">ダンプを開始する位置</param>
+    /// <param name="length">ダンプを行う開始位置からの長さ</param>
+    /// <param name="colorType">配色設定</param>
     public static IEnumerable<CharCollectionRow> HexDump(Stream stream,
                                                          Encoding encoding,
                                                          long offset = 0,
                                                          int length = 0,
                                                          ColorType colorType = ColorType.None)
     {
+        Config config = (Config)Config.Default.Clone();
+        config.Encoding = encoding;
+        config.ColorType = colorType;
+        return HexDump(stream, config, offset, length);
+    }
+
+    /// <inheritdoc cref="HexDump(Stream, Encoding, long, int, ColorType)"/>
+    /// <param name="config">HexDump用の各種設定オブジェクト</param>
+    public static IEnumerable<CharCollectionRow> HexDump(Stream stream,
+                                                         Config config,
+                                                         long offset = 0,
+                                                         int length = 0)
+    {
         long position = offset;
-        CharCollectionRow charDatas = new(position, colorType);
-        foreach (var charData in HexDumpStream(stream, encoding, offset, length))
+        CharCollectionRow charDatas = new(position, config);
+        foreach (var charData in HexDumpStream(stream, config.Encoding, offset, length))
         {
             charDatas.Set(position, charData);
             if ((position & 0x0F) == 0x0F)
             {
                 yield return charDatas;
-                charDatas = new(position + 1, colorType);
+                charDatas = new(position + 1, config);
             }
             position++;
         }
