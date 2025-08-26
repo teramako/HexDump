@@ -32,7 +32,7 @@
                 <PropertyName>Hex</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>$_.GetCharsRow([string]::Empty, 2)</ScriptBlock>
+                <PropertyName>Chars</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
@@ -62,7 +62,7 @@
                 <PropertyName>Row</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>$_.GetHexAndCharsRow('', 3)</ScriptBlock>
+                <ScriptBlock>$_.GetHexAndCharsRow(3)</ScriptBlock>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
