@@ -26,10 +26,6 @@
         <ReferencedMemberName>B</ReferencedMemberName>
         <TypeName>byte</TypeName>
       </AliasProperty>
-      <ScriptProperty>
-        <Name>DisplayString</Name>
-        <GetScriptBlock>[OutputType([string])]param() if ($this.IsChar) { $this.GetDisplayString() }</GetScriptBlock>
-      </ScriptProperty>
     </Members>
   </Type>
   <Type>

@@ -103,12 +103,9 @@ public struct CharData(byte b, Rune rune, CharType type)
     /// <summary>
     /// ダンプ結果の表示用の文字列を返す
     /// </summary>
-    public string GetDisplayString()
-    {
-        return Type switch
+    public string DisplayString => IsChar
+        ? Type switch
         {
-            CharType.Empty => NULL_LETTER,
-            CharType.Binary => NON_LETTER,
             CharType.SingleByteChar => Rune.Value switch
             {
                 < 0x20 => $"^{(char)(Rune.Value + 0x40)}",
@@ -118,11 +115,9 @@ public struct CharData(byte b, Rune rune, CharType type)
                 _ => Rune.ToString()
             },
             CharType.MultiByteChar => Rune.ToString(),
-            CharType.ContinutionFirstByte or CharType.ContinutionFirstAndLastByte
-                => CONTINUTION_LETTER_FIRST,
-            _ => CONTINUTION_LETTER
-        };
-    }
+            _ => string.Empty
+        }
+        : string.Empty;
 
     /// <summary>
     /// ダンプ結果の表示用の文字列を <paramref name="sb"/> へ書き込む
@@ -206,7 +201,7 @@ public struct CharData(byte b, Rune rune, CharType type)
         return !Filled
             ? "<Empty>"
             : IsChar
-              ? $"Byte: 0x{B:X2} CodePoint: U+{Rune.Value:X8} <{UnicodeCategory}> {GetDisplayString()}"
+              ? $"Byte: 0x{B:X2} CodePoint: U+{Rune.Value:X8} <{UnicodeCategory}> {DisplayString}"
               : $"Byte: 0x{B:X2}";
     }
 }
