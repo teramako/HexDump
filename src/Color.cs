@@ -68,13 +68,13 @@ public static class Color
     /// <summary>
     /// <see cref="UnicodeCategory"/> 値から対応するターミナルエスケープシーケンスを返す。
     /// <para>
-    /// <see cref="UnicodeCategory"/> 値は 0 - 28 の29個ある。
+    /// <see cref="UnicodeCategory"/> 値は 0 - 29 の30個ある。
     /// </para>
     /// </summary>
     /// <param name="uc">Unicode Category</param>
     public static string GetFromUnicodeCategory(UnicodeCategory? uc)
     {
-        const double NumberOfCategories = 29.0;
+        const double NumberOfCategories = 30.0;
         return uc is null
             ? string.Empty
             : GetFromHLS((int)Math.Ceiling((int)uc / NumberOfCategories * 360.0));
