@@ -13,7 +13,7 @@ public static class Color
     /// HLS カラーのターミナルのエスケープシーケンスを返す。
     /// </summary>
     /// <inheritdoc cref="RGB.FromHLS(int, int, int)"/>
-    public static string GetFromHLS(int h, int l = 40, int s = 60)
+    public static string GetFromHLS(int h, int l = 30, int s = 60)
     {
         return RGB.FromHLS(h, l, s).ToTermBg();
     }
@@ -22,11 +22,9 @@ public static class Color
     /// バイト値に対応するターミナルのエスケープシーケンスを返す。
     /// </summary>
     /// <param name="b">バイト値。HLSカラーの色相 (Hue)にマッピングされる。0 - 255</param>
-    /// <param name="l">輝度 (Lightness) 0 - 100</param>
-    /// <param name="s">彩度 (Saturation) 0 - 100</param>
-    public static string GetColorFromByte(byte b, int l = 40, int s = 60)
+    public static string GetColorFromByte(byte b)
     {
-        return GetFromHLS((int)(b * 360.0 / 0xFF), l, s);
+        return GetFromHLS((int)(b * 360.0 / 0xFF));
     }
 
     /// <summary>
@@ -50,17 +48,17 @@ public static class Color
             CharType.Binary => GetFromHLS(0, s: 0), // Gray scale
             CharType.SingleByteChar => codePoint switch
             {
-                < 0x20 or 0x7F => GetFromHLS(120),
-                < 0x7F => GetFromHLS(210),
-                < 0xA0 => GetFromHLS(90),
-                _ => GetFromHLS(270),
+                < 0x20 or 0x7F => GetFromHLS(0), // ASCII Control chars
+                < 0x7F => GetFromHLS(90), // ASCII chars
+                < 0xA0 => GetFromHLS(10), // Non-ASCII control chars
+                _ => GetFromHLS(120), // Non-ASCII chars
             },
             CharType.MultiByteChar
                 or CharType.ContinutionByte
                 or CharType.ContinutionFirstByte
                 or CharType.ContinutionFirstAndLastByte
                 or CharType.ContinutionLastByte
-                => GetFromHLS(240),
+                => GetFromHLS(150),
             _ => string.Empty
         };
     }
