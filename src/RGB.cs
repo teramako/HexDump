@@ -23,8 +23,6 @@ public record struct RGB
     /// <param name="s">彩度 (Saturation) 0 - 100</param>
     public static RGB FromHLS(int h, int l, int s)
     {
-        if (h is > 360 or < 0)
-            throw new ArgumentOutOfRangeException(nameof(h), h, "Hue must be between 0 and 360");
         if (l is > 100 or < 0)
             throw new ArgumentOutOfRangeException(nameof(l), l, "Lightness must be between 0 and 100");
         if (s is > 100 or < 0)
@@ -44,7 +42,7 @@ public record struct RGB
             min = l - (s * l / 100.0);
         }
 
-        h = Math.Abs(h) % 360;
+        h = h < 0 ? 360 + (h % 360) : h % 360;
 
         (r, g, b) = h switch
         {
