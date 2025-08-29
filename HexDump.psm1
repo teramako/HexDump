@@ -17,10 +17,13 @@ function Write-HexDump
         [string] $Path
         ,
         [Parameter()]
+        [MT.HexDump.Config] $Config = [MT.HexDump.Config]::Default
+        ,
+        [Parameter()]
         [Alias('e')]
         [MT.HexDump.EncodingTransformation()]
         [ArgumentCompleter([MT.HexDump.EncodingArgumentCompleter])]
-        [System.Text.Encoding] $Encoding = [System.Text.Encoding]::UTF8
+        [System.Text.Encoding] $Encoding
         ,
         [Parameter()]
         [ValidateRange(0, [long]::MaxValue)]
@@ -37,24 +40,34 @@ function Write-HexDump
         ,
         [Parameter()]
         [Alias('c')]
-        [MT.HexDump.ColorType] $Color = [MT.HexDump.ColorType]::None
+        [MT.HexDump.ColorType] $Color
     )
+
+    $newConfig = [Config] $Config.Clone();
+    if ($null -ne $Encoding)
+    {
+        $newConfig.Encoding = $Encoding;
+    }
+    if ($null -ne $Color)
+    {
+        $newConfig.ColorType = $Color;
+    }
 
     $dumpIter = switch ($PSCmdlet.ParameterSetName)
     {
         'Data'
         {
-            [HexDumper]::HexDump($Data, $Encoding, $Offset, $Length, $Color)
+            [HexDumper]::HexDump($Data, $newConfig, $Offset, $Length)
         }
         'Stream'
         {
-            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length, $Color)
+            [HexDumper]::HexDump($Stream, $newConfig, $Offset, $Length)
         }
         'Path'
         {
             $file = Get-Item -LiteralPath $Path -Force
             $Stream = $file.OpenRead()
-            [HexDumper]::HexDump($Stream, $Encoding, $Offset, $Length, $Color)
+            [HexDumper]::HexDump($Stream, $newConfig, $Offset, $Length)
         }
     }
 
