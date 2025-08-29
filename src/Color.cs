@@ -60,7 +60,7 @@ public static class Color
                 < 0x20 or 0x7F /* ASCII Control chars */
                     => GetFromHLS(config.InitialHue,
                                   config.DefaultLightness,
-                                  config.DefaultSaturation), 
+                                  config.DefaultSaturation),
                 < 0x7F /* ASCII chars */
                     => GetFromHLS(config.InitialHue + 90,
                                   config.DefaultLightness,
