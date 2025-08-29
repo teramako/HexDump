@@ -237,9 +237,9 @@ public struct CharData(byte b, Rune rune, CharType type)
     {
         var escapeSequence = config.ColorType switch
         {
-            ColorType.ByByte => Color.GetColorFromByte(B),
-            ColorType.ByCharType => Color.GetFromCharType(Type, CodePoint),
-            ColorType.ByUnicodeCategory => Color.GetFromUnicodeCategory(UnicodeCategory),
+            ColorType.ByByte => Color.GetColorFromByte(B, config),
+            ColorType.ByCharType => Color.GetFromCharType(Type, CodePoint, config),
+            ColorType.ByUnicodeCategory => Color.GetFromUnicodeCategory(UnicodeCategory, config),
             _ => string.Empty
         };
         if (string.IsNullOrEmpty(escapeSequence))

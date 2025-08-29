@@ -13,7 +13,7 @@ public static class Color
     /// HLS カラーのターミナルのエスケープシーケンスを返す。
     /// </summary>
     /// <inheritdoc cref="RGB.FromHLS(int, int, int)"/>
-    public static string GetFromHLS(int h, int l = 30, int s = 60)
+    public static string GetFromHLS(int h, int l, int s)
     {
         return RGB.FromHLS(h, l, s).ToTermBg();
     }
@@ -22,9 +22,13 @@ public static class Color
     /// バイト値に対応するターミナルのエスケープシーケンスを返す。
     /// </summary>
     /// <param name="b">バイト値。HLSカラーの色相 (Hue)にマッピングされる。0 - 255</param>
-    public static string GetColorFromByte(byte b)
+    /// <param name="config">Config</param>
+    public static string GetColorFromByte(byte b, Config? config = null)
     {
-        return GetFromHLS((int)(b * 360.0 / 0xFF));
+        config ??= Config.Default;
+        return GetFromHLS(config.InitialHue + (int)(b * 360.0 / 0xFF),
+                          config.DefaultLightness,
+                          config.DefaultSaturation);
     }
 
     /// <summary>
@@ -41,24 +45,43 @@ public static class Color
     /// </summary>
     /// <param name="charType"></param>
     /// <param name="codePoint"></param>
-    public static string GetFromCharType(CharType charType, int codePoint)
+    /// <param name="config">Config</param>
+    public static string GetFromCharType(CharType charType, int codePoint, Config? config = null)
     {
+        config ??= Config.Default;
         return charType switch
         {
-            CharType.Binary => GetFromHLS(0, s: 0), // Gray scale
+            CharType.Binary /* data which failed decode to a char */
+                => GetFromHLS(config.InitialHue,
+                              config.DefaultLightness,
+                              0), // Gray scale
             CharType.SingleByteChar => codePoint switch
             {
-                < 0x20 or 0x7F => GetFromHLS(0), // ASCII Control chars
-                < 0x7F => GetFromHLS(90), // ASCII chars
-                < 0xA0 => GetFromHLS(10), // Non-ASCII control chars
-                _ => GetFromHLS(120), // Non-ASCII chars
+                < 0x20 or 0x7F /* ASCII Control chars */
+                    => GetFromHLS(config.InitialHue,
+                                  config.DefaultLightness,
+                                  config.DefaultSaturation), 
+                < 0x7F /* ASCII chars */
+                    => GetFromHLS(config.InitialHue + 90,
+                                  config.DefaultLightness,
+                                  config.DefaultSaturation),
+                < 0xA0 /* Non-ASCII control chars */
+                    => GetFromHLS(config.InitialHue + 10,
+                                  config.DefaultLightness,
+                                  config.DefaultSaturation),
+                _ /* Non-ASCII chars */
+                    => GetFromHLS(config.InitialHue + 120,
+                                  config.DefaultLightness,
+                                  config.DefaultSaturation),
             },
             CharType.MultiByteChar
                 or CharType.ContinutionByte
                 or CharType.ContinutionFirstByte
                 or CharType.ContinutionFirstAndLastByte
                 or CharType.ContinutionLastByte
-                => GetFromHLS(150),
+                => GetFromHLS(config.InitialHue + 150,
+                              config.DefaultLightness,
+                              config.DefaultSaturation),
             _ => string.Empty
         };
     }
@@ -70,11 +93,15 @@ public static class Color
     /// </para>
     /// </summary>
     /// <param name="uc">Unicode Category</param>
-    public static string GetFromUnicodeCategory(UnicodeCategory? uc)
+    /// <param name="config">Config</param>
+    public static string GetFromUnicodeCategory(UnicodeCategory? uc, Config? config = null)
     {
+        config ??= Config.Default;
         const double NumberOfCategories = 30.0;
         return uc is null
             ? string.Empty
-            : GetFromHLS((int)Math.Ceiling((int)uc / NumberOfCategories * 360.0));
+            : GetFromHLS(config.InitialHue + (int)Math.Ceiling((int)uc / NumberOfCategories * 360.0),
+                         config.DefaultLightness,
+                         config.DefaultSaturation);
     }
 }

@@ -17,6 +17,50 @@ public class Config() : ICloneable
     /// </summary>
     public ColorType ColorType { get; set; } = ColorType.None;
 
+    private int _initialHue = 0;
+    /// <summary>
+    /// Initial hue value for HLS colors (0-360)
+    /// </summary>
+    public int InitialHue
+    {
+        get => _initialHue;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(InitialHue));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 360, nameof(InitialHue));
+            _initialHue = value;
+        }
+    }
+    private int _defaultLightness = 30;
+    /// <summary>
+    /// Default lightness value for HLS colors (0-100)
+    /// </summary>
+    public int DefaultLightness
+    {
+        get => _defaultLightness;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(DefaultLightness));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100, nameof(DefaultLightness));
+            _defaultLightness = value;
+        }
+    }
+
+    private int _defaultSaturation = 60;
+    /// <summary>
+    /// Default saturation value for HLS colors (0-100)
+    /// </summary>
+    public int DefaultSaturation
+    {
+        get => _defaultSaturation;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value, nameof(DefaultSaturation));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 100, nameof(DefaultSaturation));
+            _defaultSaturation = value;
+        }
+    }
+
     public string HexColumnSeparator { get; set; } = string.Empty;
     public string CharColumnSeparator { get; set; } = string.Empty;
 
@@ -92,6 +136,9 @@ public class Config() : ICloneable
         {
             Encoding = this.Encoding,
             ColorType = this.ColorType,
+            InitialHue = this.InitialHue,
+            DefaultLightness = this.DefaultLightness,
+            DefaultSaturation = this.DefaultSaturation,
             HexColumnSeparator = this.HexColumnSeparator,
             CharColumnSeparator = this.CharColumnSeparator,
             NullLeter = this.NullLeter,
