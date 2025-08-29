@@ -7,27 +7,45 @@ public class Config() : ICloneable
     private static Lazy<Config> _default = new(() => new());
     public static Config Default => _default.Value;
 
+    /// <summary>
+    /// Encoding used decode the bytes to runes
+    /// </summary>
     public Encoding Encoding { get; set; } = Encoding.UTF8;
 
+    /// <summary>
+    /// Coloring setting
+    /// </summary>
     public ColorType ColorType { get; set; } = ColorType.None;
 
     public string HexColumnSeparator { get; set; } = string.Empty;
     public string CharColumnSeparator { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Letter indicating none of data
+    /// </summary>
     public char NullLeter { get; set; } = ' ';
 
+    /// <summary>
+    /// Letter indicating data that could not be decoded to a character
+    /// </summary>
     public char NonLetter { get; set; } = '.';
 
-    private char[] _continuionLetters = ['←', '─', '─'];
+    private char[] _continutionLetters = ['←', '─', '─'];
+    /// <summary>
+    /// Character used to indicate the continution bytes in a multibyte characters
+    /// </summary>
     public char[] ContinutionLetters
     {
-        get => _continuionLetters;
+        get => _continutionLetters;
         set {
             ArgumentOutOfRangeException.ThrowIfNotEqual(value.Length, 3, nameof(ContinutionLetters));
-            _continuionLetters = value;
+            _continutionLetters = value;
         }
     }
 
+    /// <summary>
+    /// Letters mapped to ASCII controll characters
+    /// </summary>
     public char[] AsciiControlLetters { get; set; } =
     [
         '\u2400', // (0x00) NUL
