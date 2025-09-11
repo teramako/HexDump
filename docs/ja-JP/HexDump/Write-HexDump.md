@@ -242,7 +242,7 @@ HelpMessage: ''
 
 ```yaml
 Type: System.Int32
-DefaultValue: ''
+DefaultValue: 0
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
@@ -264,7 +264,7 @@ HelpMessage: ''
 
 ```yaml
 Type: System.Int64
-DefaultValue: ''
+DefaultValue: 0
 SupportsWildcards: false
 Aliases: []
 ParameterSets:
