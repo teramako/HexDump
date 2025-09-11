@@ -10,6 +10,10 @@ $(DLL): $(CSharpFiles)
 .PHONY: build
 build: $(DLL) ## Build C# Projects
 
+.PHONY: build/zip
+build/psm: build ## Create Zip archived PowerShell module files
+	@$(PWSH) -File build.ps1 -CreateZip
+
 .PHONY: test
 test: build ## Build and Run tests
 	@$(PWSH) -File test/test.ps1
@@ -21,5 +25,5 @@ docs: ## Build documents
 .PHONY: help
 help: ## Display this help
 	@echo "Targets:"
-	grep -E '^[a-zA-Z_-]+:.*?## .*$$' /dev/null $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":|## "}; {printf "  %-20s %s\n", $$(NF-2), $$NF}'
+	grep -E '^[a-zA-Z_/-]+:.*?## .*$$' /dev/null $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":|## "}; {printf "  %-20s %s\n", $$(NF-2), $$NF}'
 
