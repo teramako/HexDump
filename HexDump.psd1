@@ -88,7 +88,8 @@ AliasesToExport = 'hexdump'
 
 # List of all files packaged with this module
 FileList = 'HexDump.psd1', 'HexDump.psm1', 'libs/net8.0/MT.HexDump.dll', 
-               'HexDump.Formtas.ps1xml', 'HexDump.Types.ps1xml'
+               'HexDump.Formtas.ps1xml', 'HexDump.Types.ps1xml',
+               'HexDump-Help.xml', 'ja-JP/HexDump-Help.xml'
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.
 PrivateData = @{
