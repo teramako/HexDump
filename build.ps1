@@ -51,8 +51,32 @@ function CreateDest()
     return $tmpDir
 }
 
+function BuildMamlHelp()
+{
+    $cmdHelps = Get-ChildItem -Recurse -Path "$psmDir/docs" -Include "*-*.md" | Import-MarkdownCommandHelp
+    $cmdHelps | Group-Object { $_.Metadata['Locale'] } | ForEach-Object {
+        $name = $_.Name;
+        $modules = $_.Group.ModuleName | Sort-Object -Unique
+        $dir = switch ($name) {
+            'en-US' { $psmDir }
+            default { Join-Path -Path $psmDir -ChildPath $name }
+        }
+        $_.Group | Export-MamlCommandHelp -OutputFolder $dir @commonParam | ForEach-Object {
+            Move-Item -Path $_ -Destination $dir -Force @commonParam
+        }
+        $modules | ForEach-Object {
+            $moduleDir = Join-Path -Path $dir -ChildPath $_
+            if (Test-Path -Path $moduleDir)
+            {
+                Remove-Item -Recurse -Path $moduleDir @commonParam
+            }
+        }
+    }
+}
+
 if ($CreateZip)
 {
+    BuildMamlHelp
     $dir = CreateDest
     $zipFile = "$PSScriptRoot\out\{0}-{1}.zip" -f $ModuleManifest.Name, $ModuleManifest.Version.ToString()
     Compress-Archive -Path $dir -DestinationPath $zipFile -PassThru -Force @commonParam
@@ -63,6 +87,7 @@ if ($Publish)
     $userName = if ($IsWindows) { $env:USERNAME } else { $env:USER }
     $nugetCredential = Get-Credential -Title "Nuget ApiKey" -UserName $userName
 
+    BuildMamlHelp
     $dir = CreateDest
 
     Publish-Module `
