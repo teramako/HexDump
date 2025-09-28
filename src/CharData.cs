@@ -126,7 +126,7 @@ public struct CharData(byte b, Rune rune, CharType type)
         {
             CharType.Empty => new string(config.NullLeter, cellLength),
             CharType.Binary => new string(config.NonLetter, cellLength),
-            CharType.SingleByteChar => Rune.Value switch
+            _ => Rune.Value switch
             {
                 < 0x20 => $"{config.AsciiControlLetters[Rune.Value]}",
                 < 0x7F => $"{Rune}",
@@ -134,12 +134,6 @@ public struct CharData(byte b, Rune rune, CharType type)
                 < 0xA0 => $"^{(char)(Rune.Value + 0x40)}",
                 _ => Rune.ToString()
             },
-            CharType.MultiByteChar => Rune.ToString(),
-            CharType.ContinutionFirstByte => Rune.ToString(),
-            CharType.ContinutionFirstAndLastByte => Rune.ToString(),
-            CharType.ContinutionLastByte => Rune.ToString(),
-            CharType.ContinutionByte => Rune.ToString(),
-            _ => new string(config.NullLeter, cellLength)
         };
         var strCellLen = LengthInBufferCells(str);
         switch (Type)
