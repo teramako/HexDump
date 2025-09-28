@@ -209,6 +209,7 @@ public static class HexDumper
         int charsWritten;
         while (p < data.Length)
         {
+            DebugPrint($"HexDumpCore: Start {p}", ConsoleColor.Magenta);
             var bytes = data.Span.Slice(p, Math.Min(4, data.Length - p)).ToArray();
             var byteIndex = 0;
             // var str = enc.GetString(bytes);
@@ -225,6 +226,7 @@ public static class HexDumper
                     p++;
                     byteIndex++;
                 }
+                continue;
             }
             for (var i = 0; i < charsWritten; i++)
             {
