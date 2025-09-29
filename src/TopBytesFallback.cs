@@ -68,6 +68,9 @@ internal class TopBytesFallback : DecoderFallback
         /// <summary>
         /// <paramref name="index"/> が <c>0</c> の時のみ、後で処理できるように貯めておく。
         /// </summary>
+        /// <remarks>
+        /// 戻り値は常に <c>false</c> とし、<see cref="Decoder"/> にフォールバック処理をさせない。
+        /// </remarks>
         /// <inheritdoc cref="DecoderFallbackBuffer.Fallback(byte[], int)"/>
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
@@ -75,21 +78,13 @@ internal class TopBytesFallback : DecoderFallback
             {
                 HexDumper.DebugPrint($"Store buffer: [{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
                 _bytesUnknown = bytesUnknown;
-                return true;
             }
             return false;
         }
 
-        /// <summary>
-        /// <see cref="Decoder"/> がフォールバック文字を受け取るために呼ばれる関数。
-        /// ここで本来フォールバック文字を返すと、フォールバックした文字なのか
-        /// デコードに成功した文字なのか区別が付かない。
-        /// <see cref="Decoder"/> には何もさせないように、<c>NUL 0x00</c> を返す。
-        /// </summary>
-        /// <returns>常に <c>NUL 0x00</c> を返す</returns>
         public override char GetNextChar()
         {
-            return default;
+            throw new NotImplementedException();
         }
 
         public override bool MovePrevious()
