@@ -228,24 +228,21 @@ public static class HexDumper
                 }
                 continue;
             }
-            for (var i = 0; i < charsWritten; i++)
+            Rune rune = (charsWritten > 1 && char.IsSurrogatePair(chars[0], chars[1]))
+                ? new(chars[0], chars[1])
+                : new(chars[0]);
+            byte byteCount = (byte)enc.GetByteCount(rune.ToString());
+            CharData charData = new(bytes[byteIndex], rune, byteCount > 1 ? CharType.MultiByteChar : CharType.SingleByteChar);
+            DebugPrint($"p={p:X8}: {charData}", ConsoleColor.Blue);
+            yield return charData;
+            for (var j = 1; j < byteCount; j++)
             {
-                Rune rune = (i + 1 < charsWritten && char.IsSurrogatePair(chars[i], chars[i + 1]))
-                    ? new(chars[i], chars[++i])
-                    : new(chars[i]);
-                byte byteCount = (byte)enc.GetByteCount(rune.ToString());
-                CharData charData = new(bytes[byteIndex], rune, byteCount > 1 ? CharType.MultiByteChar : CharType.SingleByteChar);
-                DebugPrint($"p={p:X8}: {charData}", ConsoleColor.Blue);
-                yield return charData;
-                for (var j = 1; j < byteCount; j++)
-                {
-                    yield return new CharData(bytes[byteIndex + j], rune, CharType.ContinutionByte
-                                                                          | (j == 1 ? CharType.First : 0)
-                                                                          | (j == byteCount - 1 ? CharType.Last : 0));
-                }
-                p += byteCount;
-                byteIndex += byteCount;
+                yield return new CharData(bytes[byteIndex + j], rune, CharType.ContinutionByte
+                                                                      | (j == 1 ? CharType.First : 0)
+                                                                      | (j == byteCount - 1 ? CharType.Last : 0));
             }
+            p += byteCount;
+            byteIndex += byteCount;
         }
     }
 }
