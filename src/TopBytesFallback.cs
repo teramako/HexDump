@@ -36,20 +36,20 @@ internal class TopBytesFallback : DecoderFallback
     /// <inheritdoc cref="TopBytesFallback"/>
     internal class TopByteFallbackBuffer : DecoderFallbackBuffer
     {
-        private byte[] _bytesUnknown = [];
+        private Queue<byte> _buffer = new();
         /// <returns>常に <c>0</c> を返し、<see cref="Decoder"/> に処理させない</returns>
         /// <inheritdoc cref="DecoderFallbackBuffer.Remaining"/>
         public override int Remaining => 0;
 
         public override void Reset()
         {
-            _bytesUnknown = [];
+            _buffer.Clear();
         }
 
         /// <summary>
         /// フォールバック用の値が入っているか否か。
         /// </summary>
-        public bool HasFallbackChars => _bytesUnknown.Length > 0;
+        public bool HasFallbackChars => _buffer.Count > 0;
 
         /// <summary>
         /// 後々の処理としてフォールバックした文字
@@ -58,7 +58,7 @@ internal class TopBytesFallback : DecoderFallback
         /// </summary>
         public IEnumerable<CharData> GetFallbackChars()
         {
-            foreach (var b in _bytesUnknown)
+            while (_buffer.TryDequeue(out byte b))
             {
                 yield return new CharData(b, (char)b, CharType.Binary);
             }
@@ -66,7 +66,7 @@ internal class TopBytesFallback : DecoderFallback
         }
 
         /// <summary>
-        /// <paramref name="index"/> が <c>0</c> の時のみ、後で処理できるように貯めておく。
+        /// <paramref name="index"/> が <c>0</c> から連続している場合のみ、後で処理できるように貯めておく。
         /// </summary>
         /// <remarks>
         /// 戻り値は常に <c>false</c> とし、<see cref="Decoder"/> にフォールバック処理をさせない。
@@ -74,10 +74,13 @@ internal class TopBytesFallback : DecoderFallback
         /// <inheritdoc cref="DecoderFallbackBuffer.Fallback(byte[], int)"/>
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
-            if (index == 0)
+            if (index == _buffer.Count)
             {
-                HexDumper.DebugPrint($"Store buffer: [{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
-                _bytesUnknown = bytesUnknown;
+                HexDumper.DebugPrint($"Store buffer[{index}]: [{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
+                foreach (byte b in bytesUnknown)
+                {
+                    _buffer.Enqueue(b);
+                }
             }
             return false;
         }
