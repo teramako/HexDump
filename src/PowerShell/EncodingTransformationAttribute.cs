@@ -1,7 +1,7 @@
 using System.Management.Automation;
 using System.Text;
 
-namespace MT.HexDump;
+namespace MT.HexDump.PowerShell;
 
 /// <summary>
 /// PowerShell のパラメータを文字コードインスタンスへ変換する属性クラス

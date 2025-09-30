@@ -21,8 +21,8 @@ function Write-HexDump
         ,
         [Parameter()]
         [Alias('e')]
-        [MT.HexDump.EncodingTransformation()]
-        [ArgumentCompleter([MT.HexDump.EncodingArgumentCompleter])]
+        [MT.HexDump.PowerShell.EncodingTransformation()]
+        [ArgumentCompleter([MT.HexDump.PowerShell.EncodingArgumentCompleter])]
         [System.Text.Encoding] $Encoding
         ,
         [Parameter()]

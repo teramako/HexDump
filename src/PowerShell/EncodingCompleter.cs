@@ -3,7 +3,7 @@ using System.Management.Automation;
 using System.Management.Automation.Language;
 using System.Text;
 
-namespace MT.HexDump;
+namespace MT.HexDump.PowerShell;
 
 public class EncodingArgumentCompleter : IArgumentCompleter
 {
