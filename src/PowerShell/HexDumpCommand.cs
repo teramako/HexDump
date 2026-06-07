@@ -6,7 +6,7 @@ using System.Text;
 namespace MT.HexDump.PowerShell;
 
 [Cmdlet(VerbsCommon.Show, "HexDump")]
-[OutputType(typeof(CharCollectionRow))]
+[OutputType(typeof(SplitView), typeof(UnifiedView))]
 public class ShowHexDumpCommand : PSCmdlet
 {
     private const string DataParameterSet = "Data";
@@ -40,6 +40,11 @@ public class ShowHexDumpCommand : PSCmdlet
     [Alias("c")]
     public ColorType Color { get; set; } = ColorType.None;
 
+    [Parameter()]
+    [Alias("v")]
+    [ValidateSet("Split", "Unified")]
+    public string? View { get; set; }
+
     private Config _newConfig = Config.Default;
 
     private AnonymousPipeServerStream? _server;
@@ -49,6 +54,8 @@ public class ShowHexDumpCommand : PSCmdlet
     private readonly ConcurrentQueue<CharCollectionRow> _queue = [];
     private readonly AutoResetEvent _queueEvent = new(false);
     private volatile bool _readerCompleted = false;
+
+    private Func<CharCollectionRow, RowView> _createView = null!;
 
     protected override void BeginProcessing()
     {
@@ -63,6 +70,12 @@ public class ShowHexDumpCommand : PSCmdlet
         {
             _newConfig.ColorType = Color;
         }
+
+        _createView = View switch
+        {
+            "Unified" => row => new UnifiedView(row),
+            _ => row => new SplitView(row)
+        };
 
         if (ParameterSetName is DataParameterSet)
         {
@@ -103,7 +116,7 @@ public class ShowHexDumpCommand : PSCmdlet
             {
                 while (_queue.TryDequeue(out var row))
                 {
-                    WriteObject(row);
+                    WriteObject(_createView(row));
                 }
 
                 if (!_readerCompleted)
@@ -119,7 +132,7 @@ public class ShowHexDumpCommand : PSCmdlet
             using var fs = File.OpenRead(Path);
             foreach (var row in HexDumper.HexDump(fs, _newConfig, Offset, Length))
             {
-                WriteObject(row);
+                WriteObject(_createView(row));
             }
             return;
         }
