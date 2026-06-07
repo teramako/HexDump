@@ -42,8 +42,7 @@ public class ShowHexDumpCommand : PSCmdlet
 
     [Parameter()]
     [Alias("v")]
-    [ValidateSet("Split", "Unified")]
-    public string? View { get; set; }
+    public ViewType View { get; set; }
 
     private Config _newConfig = Config.Default;
 
@@ -73,7 +72,7 @@ public class ShowHexDumpCommand : PSCmdlet
 
         _createView = View switch
         {
-            "Unified" => row => new UnifiedView(row),
+            ViewType.Unified => row => new UnifiedView(row),
             _ => row => new SplitView(row)
         };
 

@@ -21,14 +21,14 @@ title: Show-HexDump
 
 ```
 Show-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Color <ColorType>] [-View <string>] [<CommonParameters>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ### Path
 
 ```
 Show-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Color <ColorType>] [-View <string>] [<CommonParameters>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ## ALIASES
@@ -268,7 +268,7 @@ HelpMessage: ''
 - `Unified`
 
 ```yaml
-Type: System.String
+Type: MT.HexDump.PowerShell.ViewType
 DefaultValue: ''
 SupportsWildcards: false
 Aliases:
