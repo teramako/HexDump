@@ -135,26 +135,26 @@ public static class HexDumper
         long totalReadBytes = offset;
         int remainingBytes;
         int readBytes;
-        if (stream.CanSeek)
+        if (offset > 0)
         {
-            stream.Seek(offset, SeekOrigin.Begin);
-        }
-        else if (stream.Position < offset)
-        {
-            var seekCount = (offset - stream.Position) / BUFFER_LENGTH;
-            remainingBytes = (int)(offset % BUFFER_LENGTH);
-            for (var i = 0; i < seekCount; i++)
+            if (stream.CanSeek)
             {
-                _ = stream.Read(buf);
+                stream.Seek(offset, SeekOrigin.Begin);
             }
-            if (remainingBytes > 0)
+            else
             {
-                _ = stream.Read(buf, 0, remainingBytes);
+                long remaining = offset;
+                Span<byte> skip = stackalloc byte[BUFFER_LENGTH];
+                while (remaining > 0)
+                {
+                    int toRead = (int)Math.Min(skip.Length, remaining);
+                    int read = stream.Read(skip[..toRead]);
+                    if (read <= 0)
+                        yield break;
+
+                    remaining -= read;
+                }
             }
-        }
-        else
-        {
-            throw new InvalidOperationException($"Could not seek to {offset} (current position: {stream.Position})");
         }
 
         CharData c;

@@ -4,12 +4,12 @@ external help file: HexDump-Help.xml
 HelpUri: ''
 Locale: ja-JP
 Module Name: HexDump
-ms.date: 08/30/2025
+ms.date: 06/07/2026
 PlatyPS schema version: 2024-05-01
-title: Write-HexDump
+title: Show-HexDump
 ---
 
-# Write-HexDump
+# Show-HexDump
 
 ## SYNOPSIS
 
@@ -20,27 +20,18 @@ title: Write-HexDump
 ### Data
 
 ```
-Write-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
-```
-
-### Stream
-
-```
-Write-HexDump [-Stream] <Stream> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ### Path
 
 ```
-Write-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ## ALIASES
-
-hexdump
 
 ## DESCRIPTION
 
@@ -81,8 +72,8 @@ hexdump -Data @(0x00..0x7F) -Format UnifyHexAndChars
 Output:
 
 ```
-Row        Hex and Letters
----        ---------------
+Row        Hex and Chars
+---        -------------
 0x00000000 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
            ␀  ␁  ␂  ␃  ␄  ␅  ␆  ␇  ␈  ␉  ␊  ␋  ␌  ␍  ␎  ␏
 0x00000010 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
@@ -204,37 +195,6 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Format
-
-出力フォーマット。 以下の指定が可能。
-
-- `SplitHexAndChars`
-- `UnifyHexAndChars`
-
-このパラメータは、 `Write-HexDump .... | Format-Table view {フォーマット名}` へのシンタックスシュガーです。
-
-ダンプ出力結果を変数に格納したい場合は、このパラメータを指定しないことを推奨します。
-
-```yaml
-Type: System.String
-DefaultValue: ''
-SupportsWildcards: false
-Aliases:
-- f
-ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues:
-- SplitHexAndChars
-- UnifyHexAndChars
-HelpMessage: ''
-```
-
 ### -Length
 
 ダンプ開始位置からの終了までの長さ。
@@ -292,7 +252,7 @@ ParameterSets:
 - Name: Path
   Position: 0
   IsRequired: true
-  ValueFromPipeline: true
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
@@ -300,22 +260,24 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Stream
+### -View
 
-ダンプ対象となるストリーム・オブジェクト
+出力フォーマット。 以下の指定が可能。
 
-ダンプが完了すると、このストリーム・オブジェクトは閉じら(`Dispose()`さ)れます。
+- `Split` (デフォルト)
+- `Unified`
 
 ```yaml
-Type: System.IO.Stream
+Type: MT.HexDump.PowerShell.ViewType
 DefaultValue: ''
 SupportsWildcards: false
-Aliases: []
+Aliases:
+- v
 ParameterSets:
-- Name: Stream
-  Position: 0
-  IsRequired: true
-  ValueFromPipeline: true
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
@@ -332,6 +294,10 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
+### System.String
+
+ダンプ対象のファイルパス。 (`-Path`パラメータ)
+
 ### System.Byte[]
 
 ダンプ対象のバイト列。 (`-Data`パラメータ)
@@ -341,22 +307,22 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ```powershell
 $bytes = @(...)
-Write-Output -NoEnumerate $bytes | Write-HexDump ...
+Write-Output -NoEnumerate $bytes | Show-HexDump ...
 ```
-
-### System.IO.Stream
-
-ダンプ対象のストリーム・オブジェクト。 (`-Stream`パラメーター)
-
-### System.String
-
-ダンプ対象のファイルパス。 (`-Path`パラメータ)
 
 ## OUTPUTS
 
-### MT.HexDump.CharCollectionRow
+### MT.HexDump.PowerShell.SplitView
 
-各16バイト分の情報を収めた行オブジェクト
+16進数と文字値を別々の列に表示するビューです。
+
+デフォルトのビューです。
+
+### MT.HexDump.powershell.UnifiedView
+
+1行目に16進数、2行目に文字を表示するビューです。
+
+`-View` パラメータを参照してください。
 
 ## NOTES
 

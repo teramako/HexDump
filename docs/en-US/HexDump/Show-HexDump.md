@@ -4,12 +4,12 @@ external help file: HexDump-Help.xml
 HelpUri: ''
 Locale: en-US
 Module Name: HexDump
-ms.date: 08/30/2025
+ms.date: 06/07/2026
 PlatyPS schema version: 2024-05-01
-title: Write-HexDump
+title: Show-HexDump
 ---
 
-# Write-HexDump
+# Show-HexDump
 
 ## SYNOPSIS
 
@@ -20,27 +20,18 @@ Dump the data hexadecimal.
 ### Data
 
 ```
-Write-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
-```
-
-### Stream
-
-```
-Write-HexDump [-Stream] <Stream> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ### Path
 
 ```
-Write-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
 ```
 
 ## ALIASES
-
-hexdump
 
 ## DESCRIPTION
 
@@ -80,8 +71,8 @@ hexdump -Data @(0x00..0x7F) -Format UnifyHexAndChars
 Output:
 
 ```
-Row        Hex and Letters
----        ---------------
+Row        Hex and Chars
+---        -------------
 0x00000000 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
            ␀  ␁  ␂  ␃  ␄  ␅  ␆  ␇  ␈  ␉  ␊  ␋  ␌  ␍  ␎  ␏
 0x00000010 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
@@ -203,37 +194,6 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Format
-
-Output Format. The following can be specified
-
-- `SplitHexAndChars`
-- `UnifyHexAndChars`
-
-This parameter is a syntax sugar to `Write-HexDump .... | Format-Table -view {format name}`.
-
-If you wish to store the dump output results in a variable, it is recommended that you do not specify this parameter.
-
-```yaml
-Type: System.String
-DefaultValue: ''
-SupportsWildcards: false
-Aliases:
-- f
-ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues:
-- SplitHexAndChars
-- UnifyHexAndChars
-HelpMessage: ''
-```
-
 ### -Length
 
 Length from the dump start position to the end.
@@ -291,7 +251,7 @@ ParameterSets:
 - Name: Path
   Position: 0
   IsRequired: true
-  ValueFromPipeline: true
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
@@ -299,25 +259,30 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Stream
+### -View
 
-Stream object to be dumped.
-When dumping is complete, this stream object is closed (`Dispose()`).
+Output Format. The following can be specified
+
+- `Split` (default)
+- `Unified`
 
 ```yaml
-Type: System.IO.Stream
+Type: MT.HexDump.PowerShell.ViewType
 DefaultValue: ''
 SupportsWildcards: false
-Aliases: []
+Aliases:
+- v
 ParameterSets:
-- Name: Stream
-  Position: 0
-  IsRequired: true
-  ValueFromPipeline: true
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
-AcceptedValues: []
+AcceptedValues:
+- Split
+- Unified
 HelpMessage: ''
 ```
 
@@ -330,6 +295,10 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
+### System.String
+
+File path to dump. (See: `-Path` parameter)
+
 ### System.Byte[]
 
 Byte sequence to dump. (See: `-Data` parameter)
@@ -339,24 +308,22 @@ You will need to add a `NoEnumerate` parameter to `Write-Output` (Alias: `echo`)
 
 ```powershell
 $bytes = @(...)
-Write-Output -NoEnumerate $bytes | Write-HexDump ...
+Write-Output -NoEnumerate $bytes | Show-HexDump ...
 ```
-
-### System.IO.Stream
-
-The stream object to dump. (See: `-Stream` parameter)
-
-
-### System.String
-
-File path to dump. (See: `-Path` parameter)
-
 
 ## OUTPUTS
 
-### MT.HexDump.CharCollectionRow
+### MT.HexDump.powershell.SplitView
 
-Row objects containing 16 bytes of information each
+A view that displays hex values and character values in separate columns.
+
+This is default view.
+
+### MT.HexDump.powershell.UnifiedView
+
+A view that displays the hex value on the first line and the character value on the second line.
+
+See `-View` parameter.
 
 ## NOTES
 

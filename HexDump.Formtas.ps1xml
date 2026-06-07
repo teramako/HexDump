@@ -5,7 +5,7 @@
     <View>
       <Name>SplitHexAndChars</Name>
       <ViewSelectedBy>
-        <TypeName>MT.HexDump.CharCollectionRow</TypeName>
+        <TypeName>MT.HexDump.PowerShell.SplitView</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <AutoSize>false</AutoSize>
@@ -42,7 +42,7 @@
     <View>
       <Name>UnifyHexAndChars</Name>
       <ViewSelectedBy>
-        <TypeName>MT.HexDump.CharCollectionRow</TypeName>
+        <TypeName>MT.HexDump.PowerShell.UnifiedView</TypeName>
       </ViewSelectedBy>
       <TableControl>
         <AutoSize>true</AutoSize>
@@ -51,7 +51,7 @@
             <Width>10</Width>
           </TableColumnHeader>
           <TableColumnHeader>
-            <Label>Hex and Letters</Label>
+            <Label>Hex and Chars</Label>
           </TableColumnHeader>
         </TableHeaders>
         <TableRowEntries>
@@ -62,7 +62,7 @@
                 <PropertyName>Row</PropertyName>
               </TableColumnItem>
               <TableColumnItem>
-                <ScriptBlock>$_.GetHexAndCharsRow(3)</ScriptBlock>
+                <PropertyName>HexAndChars</PropertyName>
               </TableColumnItem>
             </TableColumnItems>
           </TableRowEntry>
