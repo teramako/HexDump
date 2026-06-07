@@ -21,14 +21,14 @@ title: Show-HexDump
 
 ```
 Show-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>] [<CommonParameters>]
 ```
 
 ### Path
 
 ```
 Show-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Color <ColorType>] [-View <ViewType>]
+ [-Length <int>] [-Color <ColorType>] [-View <ViewType>] [<CommonParameters>]
 ```
 
 ## ALIASES
