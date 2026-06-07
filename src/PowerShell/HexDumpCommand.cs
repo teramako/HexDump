@@ -9,14 +9,17 @@ namespace MT.HexDump.PowerShell;
 [OutputType(typeof(SplitView), typeof(UnifiedView))]
 public class ShowHexDumpCommand : PSCmdlet
 {
+    private const string MessageBaseName = "MT.HexDump.resources.messages";
     private const string DataParameterSet = "Data";
     private const string PathParameterSet = "Path";
 
-    [Parameter(ParameterSetName = DataParameterSet, Mandatory = true, ValueFromPipeline = true, Position = 0)]
+    [Parameter(ParameterSetName = DataParameterSet, Mandatory = true, ValueFromPipeline = true, Position = 0,
+               HelpMessageBaseName = MessageBaseName, HelpMessageResourceId = "Param.Data")]
     [Alias("d")]
     public byte[] Data { get; set; } = [];
 
-    [Parameter(ParameterSetName = PathParameterSet, Mandatory = true, Position = 0)]
+    [Parameter(ParameterSetName = PathParameterSet, Mandatory = true, Position = 0,
+               HelpMessageBaseName = MessageBaseName, HelpMessageResourceId = "Param.Path")]
     public string Path { get; set; } = string.Empty;
 
     [Parameter()]
