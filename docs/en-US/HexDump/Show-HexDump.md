@@ -2,55 +2,45 @@
 document type: cmdlet
 external help file: HexDump-Help.xml
 HelpUri: ''
-Locale: ja-JP
+Locale: en-US
 Module Name: HexDump
-ms.date: 08/30/2025
+ms.date: 06/07/2026
 PlatyPS schema version: 2024-05-01
-title: Write-HexDump
+title: Show-HexDump
 ---
 
-# Write-HexDump
+# Show-HexDump
 
 ## SYNOPSIS
 
-データの16進数ダンプをする
+Dump the data hexadecimal.
 
 ## SYNTAX
 
 ### Data
 
 ```
-Write-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
-```
-
-### Stream
-
-```
-Write-HexDump [-Stream] <Stream> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Data] <byte[]> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <string>] [<CommonParameters>]
 ```
 
 ### Path
 
 ```
-Write-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
- [-Length <int>] [-Format <string>] [-Color <ColorType>] [<CommonParameters>]
+Show-HexDump [-Path] <string> [-Config <Config>] [-Encoding <Encoding>] [-Offset <long>]
+ [-Length <int>] [-Color <ColorType>] [-View <string>] [<CommonParameters>]
 ```
 
 ## ALIASES
 
-hexdump
-
 ## DESCRIPTION
 
-Unix系コマンドの `hexdump` のように与えられたバイト列やストリーム、ファイルを読み、バイト単位の16進数ダンプをします。
-
-またバイト列のテキスト変換をした結果も出力します。
+Like the `hexdump` Unix-like command, it reads a given byte sequence, stream, or file and dumps it hexadecimal.
+It also outputs the result of the text conversion of the byte sequence.
 
 ## EXAMPLES
 
-### Example 1. ASCIIコード一覧を出す
+### Example 1. List ASCII codes
 
 ```powershell
 hexdump -Data @(0x00..0x7F)
@@ -72,7 +62,7 @@ Row        Hex   2  3  4  5  6  7  8  9  A  B  C  D  E  F   C 1 2 3 4 5 6 7 8 9 
 
 ```
 
-### Example 2. 16進数ダンプとテキスト化データを一つの列にする
+### Example 2. Hexadecimal dump and textualized data in one column
 
 ```powershell
 hexdump -Data @(0x00..0x7F) -Format UnifyHexAndChars
@@ -81,8 +71,8 @@ hexdump -Data @(0x00..0x7F) -Format UnifyHexAndChars
 Output:
 
 ```
-Row        Hex and Letters
----        ---------------
+Row        Hex and Chars
+---        -------------
 0x00000000 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
            ␀  ␁  ␂  ␃  ␄  ␅  ␆  ␇  ␈  ␉  ␊  ␋  ␌  ␍  ␎  ␏
 0x00000010 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F
@@ -105,14 +95,14 @@ Row        Hex and Letters
 
 ### -Color
 
-16進数ダンプ列とテキスト化列の配色設定
+Color scheme settings for hexadecimal dump columns and textualized columns
 
-- `None`: 色なし
-- `ByByte`: バイト値に基づいた配色をする
-- `ByUnicodeCategtory`: Unicodeカテゴリーに基づいた配色をする
-- `ByCharType`: ASCII制御文字/ASCII文字/マルチバイト文字/文字にデコードできなかった値、等の分類で配色をする
+- `None`: no color
+- `ByByte`: color scheme based on byte values
+- `ByUnicodeCategory`: color scheme based on Unicode categories
+- `ByCharType`: color scheme based on ASCII control characters, ASCII characters and multi-byte characters values that could not be decoded into characters, etc.
 
-`Config` の設定より優先されます。
+It overrides the `Config` setting.
 
 ```yaml
 Type: MT.HexDump.ColorType
@@ -138,7 +128,7 @@ HelpMessage: ''
 
 ### -Config
 
-エンコーディングや配色設定などが入った設定群
+A set of settings including encoding, color scheme settings, etc.
 
 ```yaml
 Type: MT.HexDump.Config
@@ -159,7 +149,7 @@ HelpMessage: ''
 
 ### -Data
 
-ダンプを行う対象のバイト配列
+Byte array to be dumped
 
 ```yaml
 Type: System.Byte[]
@@ -181,10 +171,10 @@ HelpMessage: ''
 
 ### -Encoding
 
-バイト列を文字にデコードする際に使用するエンコーディング
+Encoding used to decode byte strings into characters
 
-`System.Text.Encoding` 型を直接指定するか、
-`System.Text.Encoding.GetEncoding(name or codepage)` に使用可能な名前もしくはコードページの指定も可能。
+You can also specify the `System.Text.Encoding` type directly,
+or specify a name or codepage that can be used in `System.Text.Encoding.GetEncoding(name or codepage)`.
 
 ```yaml
 Type: System.Text.Encoding
@@ -204,41 +194,10 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Format
-
-出力フォーマット。 以下の指定が可能。
-
-- `SplitHexAndChars`
-- `UnifyHexAndChars`
-
-このパラメータは、 `Write-HexDump .... | Format-Table view {フォーマット名}` へのシンタックスシュガーです。
-
-ダンプ出力結果を変数に格納したい場合は、このパラメータを指定しないことを推奨します。
-
-```yaml
-Type: System.String
-DefaultValue: ''
-SupportsWildcards: false
-Aliases:
-- f
-ParameterSets:
-- Name: (All)
-  Position: Named
-  IsRequired: false
-  ValueFromPipeline: false
-  ValueFromPipelineByPropertyName: false
-  ValueFromRemainingArguments: false
-DontShow: false
-AcceptedValues:
-- SplitHexAndChars
-- UnifyHexAndChars
-HelpMessage: ''
-```
-
 ### -Length
 
-ダンプ開始位置からの終了までの長さ。
-未指定の場合は、最後まで。
+Length from the dump start position to the end.
+If not specified, to the end.
 
 ```yaml
 Type: System.Int32
@@ -259,8 +218,8 @@ HelpMessage: ''
 
 ### -Offset
 
-ダンプ開始位置。
-未指定の場合は最初から(`0`)
+Dump start position.
+If not specified, read from the beginning.
 
 ```yaml
 Type: System.Int64
@@ -281,7 +240,7 @@ HelpMessage: ''
 
 ### -Path
 
-ダンプを行う対象ファイルパス
+Target file path to dump
 
 ```yaml
 Type: System.String
@@ -292,7 +251,7 @@ ParameterSets:
 - Name: Path
   Position: 0
   IsRequired: true
-  ValueFromPipeline: true
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
@@ -300,26 +259,30 @@ AcceptedValues: []
 HelpMessage: ''
 ```
 
-### -Stream
+### -View
 
-ダンプ対象となるストリーム・オブジェクト
+Output Format. The following can be specified
 
-ダンプが完了すると、このストリーム・オブジェクトは閉じら(`Dispose()`さ)れます。
+- `Split` (default)
+- `Unified`
 
 ```yaml
-Type: System.IO.Stream
+Type: System.String
 DefaultValue: ''
 SupportsWildcards: false
-Aliases: []
+Aliases:
+- v
 ParameterSets:
-- Name: Stream
-  Position: 0
-  IsRequired: true
-  ValueFromPipeline: true
+- Name: (All)
+  Position: Named
+  IsRequired: false
+  ValueFromPipeline: false
   ValueFromPipelineByPropertyName: false
   ValueFromRemainingArguments: false
 DontShow: false
-AcceptedValues: []
+AcceptedValues:
+- Split
+- Unified
 HelpMessage: ''
 ```
 
@@ -332,31 +295,35 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
+### System.String
+
+File path to dump. (See: `-Path` parameter)
+
 ### System.Byte[]
 
-ダンプ対象のバイト列。 (`-Data`パラメータ)
+Byte sequence to dump. (See: `-Data` parameter)
 
-パイプラインからバイト列を与えるのには、少し工夫が必要なことに注意ください。
-`Write-Output` (Alias: `echo`) に `NoEnumerate` パラメーターを付ける必要があるでしょう。
+Note that giving a sequence of bytes from the pipeline requires a little ingenuity.
+You will need to add a `NoEnumerate` parameter to `Write-Output` (Alias: `echo`).
 
 ```powershell
 $bytes = @(...)
-Write-Output -NoEnumerate $bytes | Write-HexDump ...
+Write-Output -NoEnumerate $bytes | Show-HexDump ...
 ```
-
-### System.IO.Stream
-
-ダンプ対象のストリーム・オブジェクト。 (`-Stream`パラメーター)
-
-### System.String
-
-ダンプ対象のファイルパス。 (`-Path`パラメータ)
 
 ## OUTPUTS
 
-### MT.HexDump.CharCollectionRow
+### MT.HexDump.powershell.SplitView
 
-各16バイト分の情報を収めた行オブジェクト
+A view that displays hex values and character values in separate columns.
+
+This is default view.
+
+### MT.HexDump.powershell.UnifiedView
+
+A view that displays the hex value on the first line and the character value on the second line.
+
+See `-View` parameter.
 
 ## NOTES
 
