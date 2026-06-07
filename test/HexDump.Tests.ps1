@@ -5,13 +5,13 @@ BeforeAll {
 Describe 'HexDump' {
     Context 'Data' {
         It 'ASCII' {
-            $result = Write-HexDump -Data $script:asciiData -Encoding ASCII
+            $result = Show-HexDump -Data $script:asciiData -Encoding ASCII
 
             $result | Out-String | Write-Host -ForegroundColor DarkGray
         }
 
         It 'Latin1' {
-            $result = Write-HexDump -Data $script:asciiData -Encoding Latin1
+            $result = Show-HexDump -Data $script:asciiData -Encoding Latin1
 
             $result | Out-String | Write-Host -ForegroundColor DarkGray
         }
@@ -19,7 +19,7 @@ Describe 'HexDump' {
         It 'UTF-8' {
             $data = [System.Text.Encoding]::UTF8.GetBytes('あいうえお')
 
-            $result = Write-HexDump -Data $data -Encoding UTF8
+            $result = Show-HexDump -Data $data -Encoding UTF8
 
             $result | Out-String | Write-Host -ForegroundColor DarkGray
         }
@@ -27,7 +27,7 @@ Describe 'HexDump' {
         It 'Shift_JIS' {
             $data = [System.Text.Encoding]::GetEncoding('shift_jis').GetBytes('あいうえお')
 
-            $result = Write-HexDump -Data $data -Encoding Shift_JIS
+            $result = Show-HexDump -Data $data -Encoding Shift_JIS
 
             $result | Out-String | Write-Host -ForegroundColor DarkGray
         }
