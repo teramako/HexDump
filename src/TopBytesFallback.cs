@@ -37,9 +37,9 @@ internal class TopBytesFallback : DecoderFallback
     internal class TopByteFallbackBuffer : DecoderFallbackBuffer
     {
         private Queue<byte> _buffer = new();
-        /// <returns>常に <c>0</c> を返し、<see cref="Decoder"/> に処理させない</returns>
+
         /// <inheritdoc cref="DecoderFallbackBuffer.Remaining"/>
-        public override int Remaining => 0;
+        public override int Remaining => _buffer.Count;
 
         public override void Reset()
         {
