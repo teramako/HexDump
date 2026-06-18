@@ -52,15 +52,13 @@ internal class TopBytesFallback : DecoderFallback
         public bool HasFallbackChars => _buffer.Count > 0;
 
         /// <summary>
-        /// 後々の処理としてフォールバックした文字
-        /// (<see cref="CharData.IsChar" /> が <c>false</c> なデータ)
-        /// を返す。
+        /// フォールバックしたbyte値を返す
         /// </summary>
-        public IEnumerable<CharData> GetFallbackChars()
+        public IEnumerable<byte> GetFallbackBytes()
         {
             while (_buffer.TryDequeue(out byte b))
             {
-                yield return new CharData(b, (char)b, CharType.Binary);
+                yield return b;
             }
             Reset();
         }
