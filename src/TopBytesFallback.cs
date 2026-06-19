@@ -37,7 +37,7 @@ internal class TopBytesFallback : DecoderFallback
     /// <inheritdoc cref="TopBytesFallback"/>
     internal class TopByteFallbackBuffer : DecoderFallbackBuffer
     {
-        private Queue<byte> _buffer = new();
+        private ByteRingBuffer _buffer = new();
 
         /// <inheritdoc/>
         public override int Remaining => _buffer.Count;
@@ -50,7 +50,7 @@ internal class TopBytesFallback : DecoderFallback
         /// <summary>
         /// Indicates whether fallback bytes are stored.
         /// </summary>
-        public bool HasFallbackChars => _buffer.Count > 0;
+        public bool HasFallbackChars => _buffer.HasData;
 
         /// <summary>
         /// Returns the stored fallback bytes.
@@ -102,6 +102,53 @@ internal class TopBytesFallback : DecoderFallback
         public override bool MovePrevious()
         {
             throw new NotImplementedException();
+        }
+    }
+
+    internal sealed class ByteRingBuffer
+    {
+        private readonly byte[] _buffer = new byte[4];
+        private int _head = 0;
+        private int _tail = 0;
+        private int _count = 0;
+
+        public int Count => _count;
+        public bool HasData => _count > 0;
+
+        public void Clear()
+        {
+            _head = _tail = _count = 0;
+        }
+
+        public void Enqueue(byte b)
+        {
+            if (_count == 4)
+                throw new InvalidOperationException("RingBuffer overflow");
+
+            _buffer[_tail] = b;
+            _tail = (_tail + 1) & 3; // %4 の高速化
+            _count++;
+        }
+
+        public bool TryDequeue(out byte b)
+        {
+            if (_count == 0)
+            {
+                b = default;
+                return false;
+            }
+            b = _buffer[_head];
+            _head = (_head + 1) & 3;
+            _count--;
+            return true;
+        }
+
+        public IEnumerable<byte> Drain()
+        {
+            while (TryDequeue(out var b))
+            {
+                yield return b;
+            }
         }
     }
 }
