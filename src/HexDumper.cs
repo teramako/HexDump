@@ -82,7 +82,7 @@ public static class HexDumper
 
         dumpTask.Wait();
 
-        void Emit(long p, CharData cd)
+        void EmitBatch(long p, ReadOnlySpan<CharData> batch)
         {
             if (p < 0)
             {
@@ -90,7 +90,10 @@ public static class HexDumper
                 completed = true;
                 return;
             }
-            charDataQueue.Enqueue(cd);
+            for (int i = 0; i < batch.Length; i++)
+            {
+                charDataQueue.Enqueue(batch[i]);
+            }
             queueEvent.Set();
         }
         void DumpTask()
@@ -99,19 +102,19 @@ public static class HexDumper
                 ? data.Span.Slice((int)offset, length)
                 : data.Span.Slice((int)offset);
             DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
-            HexDumpCore(targetData, encoding, fallbackBuffer, offset, Emit);
+            HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
             if (fallbackBuffer.HasFallbackChars)
             {
-                var position = targetData.Length - fallbackBuffer.Remaining;
+                Span<CharData> batch = stackalloc CharData[4];
                 var i = 0;
                 foreach (var b in fallbackBuffer.GetFallbackBytes())
                 {
-                    Emit(position + i, new(b, (char)b, CharType.Binary));
-                    i++;
+                    batch[i++] = new(b, (char)b, CharType.Binary);
                 }
+                EmitBatch(offset + targetData.Length -i, batch[..i]);
             }
             // end signal
-            Emit(-1, default);
+            EmitBatch(-1, default);
         }
     }
 
@@ -151,12 +154,14 @@ public static class HexDumper
         AutoResetEvent rowEvent = new(false);
         bool completed = false;
 
-        var dumpTask = AsyncHexDumpStream(stream, config.Encoding, Emit, offset, length);
+        var dumpTask = AsyncHexDumpStream(stream, config.Encoding, EmitBatch, offset, length);
 
         while (!(completed && rowQueue.IsEmpty))
         {
             while (rowQueue.TryDequeue(out var row))
             {
+                if (row.IsEmpty)
+                    yield break;
                 yield return row;
             }
 
@@ -168,7 +173,7 @@ public static class HexDumper
 
         dumpTask.Wait();
 
-        void Emit(long p, CharData cd)
+        void EmitBatch(long p, ReadOnlySpan<CharData> batch)
         {
             if (p < 0)
             {
@@ -177,12 +182,16 @@ public static class HexDumper
                 completed = true;
                 return;
             }
-            charDatas.Set(p, cd);
-            if ((p & 0x0F) == 0x0F)
+            for (var i = 0; i < batch.Length; i++)
             {
-                rowQueue.Enqueue(charDatas);
-                rowEvent.Set();
-                charDatas = new(p + 1, config);
+                var pos = p + i;
+                charDatas.Set(pos, batch[i]);
+                if ((pos & 0x0F) == 0x0F)
+                {
+                    rowQueue.Enqueue(charDatas);
+                    rowEvent.Set();
+                    charDatas = new(pos + 1, config);
+                }
             }
         }
     }
@@ -216,7 +225,7 @@ public static class HexDumper
 
     public static async Task AsyncHexDumpStream(Stream stream,
                                                 Encoding originalEncoding,
-                                                Action<long, CharData> emit,
+                                                Action<long, ReadOnlySpan<CharData>> emitBatch,
                                                 long offset = 0,
                                                 int length = 0)
     {
@@ -241,7 +250,7 @@ public static class HexDumper
             if (readBytes == 0)
                 break;
 
-            HexDumpCore(buf[..(fbBytes.Length + readBytes)], encoding, fallbackBuffer, position, emit);
+            HexDumpCore(buf[..(fbBytes.Length + readBytes)], encoding, fallbackBuffer, position, emitBatch);
             if (fallbackBuffer.HasFallbackChars)
             {
                 fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
@@ -253,30 +262,33 @@ public static class HexDumper
 
         if (!fbBytes.IsEmpty)
         {
+            Span<CharData> batch = stackalloc CharData[4];
             position -= fbBytes.Length;
             for (var i = 0; i < fbBytes.Length; i++)
             {
                 var b = fbBytes[i];
                 DebugPrint($"p={position + i:X8}: (Final) {b:X2}", ConsoleColor.Yellow);
-                emit(position + i, new(b, (char)b, CharType.Binary));
+                batch[i] = new(b, (char)b, CharType.Binary);
             }
+            emitBatch(position, batch[..fbBytes.Length]);
         }
 
         // end signal
-        emit(-1, default);
+        emitBatch(-1, default);
     }
 
     private static void HexDumpCore(ReadOnlySpan<byte> data,
                                     Encoding encoding,
                                     TopBytesFallback.TopByteFallbackBuffer fallbackBuffer,
                                     long startPosition,
-                                    Action<long, CharData> emit)
+                                    Action<long, ReadOnlySpan<CharData>> emitBatch)
     {
         const int BYTE_LENGTH = 4;
         int pos = 0;
         Span<char> charBuf = stackalloc char[8];
         Span<byte> byteBuf = stackalloc byte[BYTE_LENGTH];
         scoped Span<byte> remainingBytes = Span<byte>.Empty;
+        Span<CharData> batch = stackalloc CharData[4];
         long globalPosition;
         bool isUTF8 = encoding.CodePage == 65001;
         // fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
@@ -323,9 +335,9 @@ public static class HexDumper
                 foreach (var fbByte in fallbackBuffer.GetFallbackBytes())
                 {
                     DebugPrint($"p={pos+byteIndex:X8}: (Fallback) {fbByte:X2}", ConsoleColor.Yellow);
-                    emit(globalPosition + byteIndex, new(fbByte, (char)fbByte, CharType.Binary));
-                    byteIndex++;
+                    batch[byteIndex++] = new(fbByte, (char)fbByte, CharType.Binary);
                 }
+                emitBatch(globalPosition, batch[..byteIndex]);
                 pos += byteIndex;
                 remainingBytes = byteBuf[byteIndex..];
                 DebugPrint($"END: pos={pos}, remainingBytes={string.Join(' ', remainingBytes.ToArray().Select(b => $"{b:X2}"))}", ConsoleColor.Cyan);
@@ -338,15 +350,16 @@ public static class HexDumper
             CharData charData = new(byteBuf[byteIndex], rune, type);
             DebugPrint($"p={pos:X8}: [{byteCount}] {charData}", ConsoleColor.Blue);
 
-            emit(globalPosition, charData);
+            batch[0] = charData;
 
             for (var j = 1; j < byteCount; j++)
             {
                 type = CharType.ContinutionByte;
                 if (j == 1) type |= CharType.First;
                 if (j == byteCount - 1) type |= CharType.Last;
-                emit(globalPosition + j, new(byteBuf[byteIndex + j], rune, type));
+                batch[j] = new(byteBuf[byteIndex + j], rune, type);
             }
+            emitBatch(globalPosition, batch[..byteCount]);
 
             pos += byteCount;
             remainingBytes = byteBuf[byteCount..];
