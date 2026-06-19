@@ -49,9 +49,11 @@ public class CharCollectionRow(long row, Config config)
     /// <inheritdoc cref="PrintHexRow(StringBuilder, Config, int)"/>
     public string GetHexRow(Config config, int cellLength)
     {
-        StringBuilder sb = new(RowData.Length * (cellLength + config.HexColumnSeparator.Length));
+        StringBuilder sb = StringBuilderPool.Rent(RowData.Length * (cellLength + config.HexColumnSeparator.Length));
         PrintHexRow(sb, config, cellLength);
-        return sb.ToString();
+        var result = sb.ToString();
+        StringBuilderPool.Return(sb);
+        return result;
     }
 
     /// <summary>
@@ -102,9 +104,11 @@ public class CharCollectionRow(long row, Config config)
     /// <inheritdoc cref="PrintCharsRow(StringBuilder, Config, int)"/>
     public string GetCharsRow(Config config, int cellLength)
     {
-        StringBuilder sb = new(RowData.Length * (cellLength + config.CharColumnSeparator.Length));
+        StringBuilder sb = StringBuilderPool.Rent(RowData.Length * (cellLength + config.CharColumnSeparator.Length));
         PrintCharsRow(sb, config, cellLength);
-        return sb.ToString();
+        var result = sb.ToString();
+        StringBuilderPool.Return(sb);
+        return result;
     }
 
     /// <summary>
@@ -155,11 +159,13 @@ public class CharCollectionRow(long row, Config config)
         int hexCellLen = (maxSepLen + cellLength) - hexSepLen;
         int charCellLen = (maxSepLen + cellLength) - charSepLen;
 
-        StringBuilder sb = new(RowData.Length * (cellLength + maxSepLen) * 2);
+        StringBuilder sb = StringBuilderPool.Rent(RowData.Length * (cellLength + maxSepLen) * 2);
         PrintHexRow(sb, config, hexCellLen);
         sb.AppendLine();
         PrintCharsRow(sb, config, charCellLen);
-        return sb.ToString();
+        var result = sb.ToString();
+        StringBuilderPool.Return(sb);
+        return result;
     }
 
     public int Count => IsEmpty ? 0 : RowData.Count(static c => c.Filled);
