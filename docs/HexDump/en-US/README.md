@@ -5,7 +5,7 @@ HelpInfoUri: ''
 Locale: en-US
 Module Guid: 08b0c809-4abd-4320-9d1d-c334c47fcefd
 Module Name: HexDump
-ms.date: 06/07/2026
+ms.date: 06/21/2026
 PlatyPS schema version: 2024-05-01
 title: HexDump Module
 ---
@@ -16,7 +16,7 @@ title: HexDump Module
 
 like 'hexdump'
 
-## HexDump Cmdlets
+## HexDump
 
 ### [Show-HexDump](Show-HexDump.md)
 

@@ -43,7 +43,7 @@ It also outputs the result of the text conversion of the byte sequence.
 ### Example 1. List ASCII codes
 
 ```powershell
-hexdump -Data @(0x00..0x7F)
+Show-HexDump -Data @(0x00..0x7F)
 ```
 
 Output:
@@ -65,7 +65,7 @@ Row        Hex   2  3  4  5  6  7  8  9  A  B  C  D  E  F   C 1 2 3 4 5 6 7 8 9 
 ### Example 2. Hexadecimal dump and textualized data in one column
 
 ```powershell
-hexdump -Data @(0x00..0x7F) -Format UnifyHexAndChars
+Show-HexDump -Data @(0x00..0x7F) -Format UnifyHexAndChars
 ```
 
 Output:
