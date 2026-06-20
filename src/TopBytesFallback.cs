@@ -3,20 +3,21 @@ using System.Text;
 namespace MT.HexDump;
 
 /// <summary>
-/// HexDump用のフォールバック処理クラス。
-/// 先頭バイト列のみフォールバックできるようにする。
+/// Fallback handler used for HexDump processing.
+/// Prevents the <see cref="Decoder"/> from performing its default fallback
+/// and allows manual handling of undecodable byte sequences.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Hexdump 処理において、デコード対象のバイト列は文字列とは限らず高確率で失敗するだろう。
-/// 本来デコードに成功するだろうバイト列であっても、
-/// (特にストリーム処理では全てのバイト列をデコード対象にできず)
-/// 途中で途切れたバイト列であるために変換に失敗するかもしれない。
-/// よって、先頭バイトのみをバッファーに貯めておく。
+/// In hex dump processing, the input byte sequence is not necessarily valid text,
+/// and decoding is likely to fail. Even byte sequences that would normally decode
+/// correctly may fail during streaming because the data may be incomplete.
+/// Therefore, only the leading undecodable bytes are stored in the buffer.
 /// </para>
 /// <para>
-/// また、本来のフォールバックでは代替文字を返すか例外を投げるのだが、ここでは何もしない。
-/// 後々処理できるようにする。
+/// A standard fallback would either return a replacement character or throw an
+/// exception, but this implementation intentionally performs no fallback action.
+/// The undecodable bytes are preserved so they can be processed later.
 /// </para>
 /// </remarks>
 internal class TopBytesFallback : DecoderFallback
@@ -31,15 +32,15 @@ internal class TopBytesFallback : DecoderFallback
         return _fallbackBuffer.Value;
     }
     /// <summary>
-    /// HexDump用のフォールバック・バッファー。
+    /// Fallback buffer for HexDump.
     /// </summary>
     /// <inheritdoc cref="TopBytesFallback"/>
     internal class TopByteFallbackBuffer : DecoderFallbackBuffer
     {
-        private Queue<byte> _buffer = new();
-        /// <returns>常に <c>0</c> を返し、<see cref="Decoder"/> に処理させない</returns>
-        /// <inheritdoc cref="DecoderFallbackBuffer.Remaining"/>
-        public override int Remaining => 0;
+        private ByteRingBuffer _buffer = new();
+
+        /// <inheritdoc/>
+        public override int Remaining => _buffer.Count;
 
         public override void Reset()
         {
@@ -47,31 +48,31 @@ internal class TopBytesFallback : DecoderFallback
         }
 
         /// <summary>
-        /// フォールバック用の値が入っているか否か。
+        /// Indicates whether fallback bytes are stored.
         /// </summary>
-        public bool HasFallbackChars => _buffer.Count > 0;
+        public bool HasFallbackChars => _buffer.HasData;
 
         /// <summary>
-        /// 後々の処理としてフォールバックした文字
-        /// (<see cref="CharData.IsChar" /> が <c>false</c> なデータ)
-        /// を返す。
+        /// Returns the stored fallback bytes.
         /// </summary>
-        public IEnumerable<CharData> GetFallbackChars()
+        public IEnumerable<byte> GetFallbackBytes()
         {
             while (_buffer.TryDequeue(out byte b))
             {
-                yield return new CharData(b, (char)b, CharType.Binary);
+                yield return b;
             }
             Reset();
         }
 
         /// <summary>
-        /// <paramref name="index"/> が <c>0</c> から連続している場合のみ、後で処理できるように貯めておく。
+        /// Stores the fallback bytes only when <paramref name="index"/> is a
+        /// continuous sequence starting from <c>0</c>, so they can be processed later.
         /// </summary>
         /// <remarks>
-        /// 戻り値は常に <c>false</c> とし、<see cref="Decoder"/> にフォールバック処理をさせない。
+        /// Always returns <c>false</c> to prevent the <see cref="Decoder"/> from
+        /// performing its default fallback behavior.
         /// </remarks>
-        /// <inheritdoc cref="DecoderFallbackBuffer.Fallback(byte[], int)"/>
+        /// <inheritdoc/>
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
             if (index == _buffer.Count)
@@ -85,14 +86,80 @@ internal class TopBytesFallback : DecoderFallback
             return false;
         }
 
+        public bool Fallback(ReadOnlySpan<byte> bytesUnknown, int index)
+        {
+            // `index` indicates "where the fallback began in `bytesUnknown`"
+            // Since `TopBytesFallback` always retains all bytes, `index` can be ignored
+            for (var i = 0; i < bytesUnknown.Length; i++)
+            {
+                _buffer.Enqueue(bytesUnknown[i]);
+            }
+            return false;
+        }
+
+        /// <remarks>
+        /// Not implemented because fallback processing is intentionally disabled.
+        /// </remarks>
+        /// <inheritdoc/>
         public override char GetNextChar()
         {
             throw new NotImplementedException();
         }
 
+        /// <remarks>
+        /// Not implemented because fallback processing is intentionally disabled.
+        /// </remarks>
+        /// <inheritdoc/>
         public override bool MovePrevious()
         {
             throw new NotImplementedException();
+        }
+    }
+
+    internal sealed class ByteRingBuffer
+    {
+        private readonly byte[] _buffer = new byte[4];
+        private int _head = 0;
+        private int _tail = 0;
+        private int _count = 0;
+
+        public int Count => _count;
+        public bool HasData => _count > 0;
+
+        public void Clear()
+        {
+            _head = _tail = _count = 0;
+        }
+
+        public void Enqueue(byte b)
+        {
+            if (_count == 4)
+                throw new InvalidOperationException("RingBuffer overflow");
+
+            _buffer[_tail] = b;
+            _tail = (_tail + 1) & 3; // %4 の高速化
+            _count++;
+        }
+
+        public bool TryDequeue(out byte b)
+        {
+            if (_count == 0)
+            {
+                b = default;
+                return false;
+            }
+            b = _buffer[_head];
+            _head = (_head + 1) & 3;
+            _count--;
+            return true;
+        }
+
+        public IEnumerable<byte> Drain()
+        {
+            while (TryDequeue(out var b))
+            {
+                yield return b;
+            }
         }
     }
 }
