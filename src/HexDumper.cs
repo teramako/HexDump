@@ -102,19 +102,28 @@ public static partial class HexDumper
                 ? data.Span.Slice((int)offset, length)
                 : data.Span.Slice((int)offset);
             DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
-            HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
-            if (fallbackBuffer.HasFallbackChars)
+            switch (encoding.CodePage)
             {
-                Span<CharData> batch = stackalloc CharData[4];
-                var i = 0;
-                foreach (var b in fallbackBuffer.GetFallbackBytes())
-                {
-                    batch[i++] = new(b, (char)b, CharType.Binary);
-                }
-                EmitBatch(offset + targetData.Length -i, batch[..i]);
+                case 20127: // ASCII
+                    HexDumpCoreAscii(targetData, offset, EmitBatch);
+                    EmitBatch(-1, default);
+                    return;
+                case 28591: // Latin-1
+                    HexDumpCoreLatin1(targetData, offset, EmitBatch);
+                    EmitBatch(-1, default);
+                    return;
+                case 65001: // UTF-8
+                    var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
+                    HexDumpCoreUTF8(targetData, offset, EmitBatch, fallbackBuffer);
+                    FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), targetData.Length, EmitBatch);
+                    return;
+                default:
+                    var newEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
+                    fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
+                    HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
+                    FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), targetData.Length, EmitBatch);
+                    return;
             }
-            // end signal
-            EmitBatch(-1, default);
         }
     }
 
