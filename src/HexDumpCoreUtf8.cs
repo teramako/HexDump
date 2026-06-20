@@ -22,7 +22,7 @@ public static partial class HexDumper
 
             if (status is OperationStatus.NeedMoreData)
             {
-                fallbackBuffer.Fallback(data[pos..].ToArray(), 0);
+                fallbackBuffer.Fallback(data[pos..], 0);
                 emitBatch(position, batch[..batchCount]);
                 return;
             }

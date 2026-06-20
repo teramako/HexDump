@@ -86,6 +86,17 @@ internal class TopBytesFallback : DecoderFallback
             return false;
         }
 
+        public bool Fallback(ReadOnlySpan<byte> bytesUnknown, int index)
+        {
+            // `index` indicates "where the fallback began in `bytesUnknown`"
+            // Since `TopBytesFallback` always retains all bytes, `index` can be ignored
+            for (var i = 0; i < bytesUnknown.Length; i++)
+            {
+                _buffer.Enqueue(bytesUnknown[i]);
+            }
+            return false;
+        }
+
         /// <remarks>
         /// Not implemented because fallback processing is intentionally disabled.
         /// </remarks>
