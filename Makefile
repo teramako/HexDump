@@ -1,5 +1,5 @@
 PWSH := pwsh -NoProfile
-DLL := libs/net8.0/MT.HexDump.dll
+DLL := libs/MT.HexDump.dll
 CSharpFiles = $(shell find src \( -name ".git" -o -name "obj" -o -name "bin" \) -prune -o -name "*.cs" -print)
 
 .ONESHELL:
@@ -21,6 +21,10 @@ test: build ## Build and Run tests
 .PHONY: docs
 docs: ## Build documents
 	@$(PWSH) -File ./docs/Make-Docs.ps1 -Locale ja-JP -Verbose
+
+.PHONY: clean
+clean: ## Clear build files
+	@rm -rv libs/*
 
 .PHONY: help
 help: ## Display this help
