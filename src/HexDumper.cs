@@ -255,6 +255,21 @@ public static partial class HexDumper
                 while (remaining > 0);
                 emitBatch(-1, default);
                 return;
+            case 65001: // UTF-8
+                do
+                {
+                    var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+                    readBytes = stream.Read(buf);
+                    if (readBytes == 0)
+                        break;
+
+                    HexDumpCoreUTF8(buf[..readBytes], position, emitBatch, new TopBytesFallback.TopByteFallbackBuffer());
+                    remaining -= readBytes;
+                    position += readBytes;
+                }
+                while (remaining > 0);
+                emitBatch(-1, default);
+                return;
         }
 
         var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
