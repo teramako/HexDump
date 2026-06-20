@@ -371,8 +371,6 @@ public static partial class HexDumper
         scoped Span<byte> remainingBytes = Span<byte>.Empty;
         Span<CharData> batch = stackalloc CharData[4];
         long globalPosition;
-        bool isUTF8 = encoding.CodePage == 65001;
-        // fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
 
         DebugPrint($"HexDumpCore: Start {startPosition} Lengt={data.Length}", ConsoleColor.Magenta);
         while (pos < data.Length)
@@ -426,7 +424,7 @@ public static partial class HexDumper
             }
 
             Rune.DecodeFromUtf16(charBuf, out Rune rune, out _);
-            int byteCount = isUTF8 ? rune.Utf8SequenceLength : encoding.GetByteCount(rune.ToString());
+            int byteCount = encoding.GetByteCount(rune.ToString());
             CharType type = byteCount > 1 ? CharType.MultiByteChar : CharType.SingleByteChar;
             CharData charData = new(byteBuf[byteIndex], rune, type);
             DebugPrint($"p={pos:X8}: [{byteCount}] {charData}", ConsoleColor.Blue);
