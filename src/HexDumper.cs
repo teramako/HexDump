@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MT.HexDump;
 
-public static class HexDumper
+public static partial class HexDumper
 {
     [Conditional("DEBUG")]
     public static void DebugPrint(string msg, ConsoleColor foreground = ConsoleColor.Red)
@@ -232,16 +232,35 @@ public static class HexDumper
         if (offset > 0)
             Seek(stream, offset);
 
-        var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
-        var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
-        int readBytes;
-
-        ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
         long position = offset;
         int remaining = length > 0 ? length : int.MaxValue;
+        int readBytes;
 
         Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
 
+        switch (originalEncoding.CodePage)
+        {
+            case 20127: // ASCII
+                do
+                {
+                    var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+                    readBytes = stream.Read(buf);
+                    if (readBytes == 0)
+                        break;
+
+                    HexDumpCoreAscii(buf[..readBytes], position, emitBatch);
+                    remaining -= readBytes;
+                    position += readBytes;
+                }
+                while (remaining > 0);
+                emitBatch(-1, default);
+                return;
+        }
+
+        var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
+        var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
+
+        ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
         do
         {
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
