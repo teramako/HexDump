@@ -92,8 +92,6 @@ FileList = @(
     'libs/MT.HexDump.dll'
     'HexDump.Formtas.ps1xml'
     'HexDump.Types.ps1xml'
-    'HexDump-Help.xml'
-    'ja-JP/HexDump-Help.xml'
 )
 
 # Private data to pass to the module specified in RootModule/ModuleToProcess. This may also contain a PSData hashtable with additional module metadata used by PowerShell.

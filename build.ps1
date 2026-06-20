@@ -1,21 +1,30 @@
 <#
 .SYNOPSIS
-Build PowerShell Module Package
+    Build PowerShell Module Package
+
+.PARAMETER Build
+    build donet project
 
 .PARAMETER CreateZip
-Create Zip archived the PowerShell module files
+    Create Zip archived the PowerShell module files
 
 .PARAMETER Publish
-Upload the PowerShell module to PowerShell Gallery (https://www.powershellgallery.com/)
+    Upload the PowerShell module to PowerShell Gallery (https://www.powershellgallery.com/)
 
 #>
 [CmdletBinding()]
 param(
+    [Parameter(ParameterSetName = "Build", Mandatory)]
+    [switch] $Build
+    ,
     [Parameter(ParameterSetName = "Zip", Mandatory)]
     [switch] $CreateZip
     ,
     [Parameter(ParameterSetName = "Publish", Mandatory)]
     [switch] $Publish
+    ,
+    [Parameter(ParameterSetName = "HelpXML", Mandatory)]
+    [switch] $HelpXML
 )
 $ErrorActionPreference = 'Stop'
 
@@ -28,16 +37,41 @@ $commonParam = if ($PSCmdlet.MyInvocation.BoundParameters['Verbose'])
     @{ Verbose = $false }
 }
 
-$ModuleManifest = Test-ModuleManifest -Path $psmDir\HexDump.psd1
-$tmpDir = "$PSScriptRoot\out\{0}" -f $ModuleManifest.Name
+$psdFile = Join-Path -Path $psmDir -ChildPath HexDump.psd1
+$ModuleManifest = Test-ModuleManifest -Path $psdFile
+$tmpDir = Join-Path -Path $PSScriptRoot -ChildPath out, $ModuleManifest.Name
 
-function CreateDest()
+function Build-Project
 {
+    param()
+    '---------------------------------------------',
+    'Build Project',
+    '---------------------------------------------' | Write-Host -ForegroundColor Magenta
+    try {
+        Push-Location $psmDir
+        dotnet build src -c Release | Write-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw "Faild to build"
+        }
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function CreateDest
+{
+    param()
+
     if (Test-Path -Path $tmpDir -PathType Container)
     {
+        "Remove: $tmpDir" | Write-Host -ForegroundColor Magenta
         Remove-Item -Recurse $tmpDir @commonParam
     }
     $null = New-Item -Path $tmpDir -ItemType Directory
+
+    Build-Project
+    BuildMamlHelp | Write-Host
     $ModuleManifest.FileList | ForEach-Object {
         $filePath = Resolve-Path -Path $_ -Relative -RelativeBasePath $psmDir
         $destFile = [System.IO.FileInfo]::new((Join-Path -Path $tmpDir -ChildPath $filePath));
@@ -51,34 +85,36 @@ function CreateDest()
     return $tmpDir
 }
 
-function BuildMamlHelp()
+function BuildMamlHelp
 {
-    $cmdHelps = Get-ChildItem -Recurse -Path "$psmDir/docs" -Include "*-*.md" | Import-MarkdownCommandHelp
-    $cmdHelps | Group-Object { $_.Metadata['Locale'] } | ForEach-Object {
-        $name = $_.Name;
-        $modules = $_.Group.ModuleName | Sort-Object -Unique
-        $dir = switch ($name) {
-            'en-US' { $psmDir }
-            default { Join-Path -Path $psmDir -ChildPath $name }
-        }
-        $_.Group | Export-MamlCommandHelp -OutputFolder $dir @commonParam | ForEach-Object {
-            Move-Item -Path $_ -Destination $dir -Force @commonParam
-        }
-        $modules | ForEach-Object {
-            $moduleDir = Join-Path -Path $dir -ChildPath $_
-            if (Test-Path -Path $moduleDir)
-            {
-                Remove-Item -Recurse -Path $moduleDir @commonParam
-            }
-        }
-    }
+    [OutputType([System.IO.FileInfo])]
+    param()
+    '---------------------------------------------',
+    'Build Maml Help',
+    '---------------------------------------------' | Write-Host -ForegroundColor Magenta
+    $script = Join-Path -Path $psmDir -ChildPath 'docs', 'Make-MamlHelp.ps1'
+    & $script @commonParam
+}
+
+if ($Build)
+{
+    Build-Project
+}
+
+if ($HelpXML)
+{
+    BuildMamlHelp
 }
 
 if ($CreateZip)
 {
-    BuildMamlHelp
     $dir = CreateDest
-    $zipFile = "$PSScriptRoot\out\{0}-{1}.zip" -f $ModuleManifest.Name, $ModuleManifest.Version.ToString()
+
+    '---------------------------------------------',
+    'Create Zip',
+    '---------------------------------------------' | Write-Host -ForegroundColor Magenta
+    $zipFileName = "{0}-{1}.zip" -f $ModuleManifest.Name, $ModuleManifest.Version.ToString()
+    $zipFile = Join-Path -Path $PSScriptRoot -ChildPath out, $zipFileName
     Compress-Archive -Path $dir -DestinationPath $zipFile -PassThru -Force @commonParam
 }
 
@@ -87,9 +123,12 @@ if ($Publish)
     $userName = if ($IsWindows) { $env:USERNAME } else { $env:USER }
     $nugetCredential = Get-Credential -Title "Nuget ApiKey" -UserName $userName
 
-    BuildMamlHelp
+    $null = BuildMamlHelp
     $dir = CreateDest
 
+    '---------------------------------------------',
+    'Upload to PowerShell Gallery',
+    '---------------------------------------------' | Write-Host -ForegroundColor Magenta
     Publish-Module `
         -Path $dir `
         -NuGetApiKey ($nugetCredential.Password | ConvertFrom-SecureString -AsPlainText) `
