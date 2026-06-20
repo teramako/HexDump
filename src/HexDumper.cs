@@ -234,63 +234,59 @@ public static partial class HexDumper
 
         long position = offset;
         int remaining = length > 0 ? length : int.MaxValue;
-        int readBytes;
 
         Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
 
         switch (originalEncoding.CodePage)
         {
             case 20127: // ASCII
-                do
-                {
-                    var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
-                    readBytes = stream.Read(buf);
-                    if (readBytes == 0)
-                        break;
-
-                    HexDumpCoreAscii(buf[..readBytes], position, emitBatch);
-                    remaining -= readBytes;
-                    position += readBytes;
-                }
-                while (remaining > 0);
-                emitBatch(-1, default);
+                ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreAscii);
                 return;
             case 28591: // Latin-1
-                do
-                {
-                    var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
-                    readBytes = stream.Read(buf);
-                    if (readBytes == 0)
-                        break;
-
-                    HexDumpCoreLatin1(buf[..readBytes], position, emitBatch);
-                    remaining -= readBytes;
-                    position += readBytes;
-                }
-                while (remaining > 0);
-                emitBatch(-1, default);
+                ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreLatin1);
                 return;
             case 65001: // UTF-8
-                do
-                {
-                    var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
-                    readBytes = stream.Read(buf);
-                    if (readBytes == 0)
-                        break;
-
-                    HexDumpCoreUTF8(buf[..readBytes], position, emitBatch, new TopBytesFallback.TopByteFallbackBuffer());
-                    remaining -= readBytes;
-                    position += readBytes;
-                }
-                while (remaining > 0);
-                emitBatch(-1, default);
+                ProcessingUtf8(stream, position, remaining, buffer, emitBatch);
+                return;
+            default:
+                ProcessGeneric(stream, position, remaining, buffer, emitBatch, originalEncoding);
                 return;
         }
+    }
 
-        var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
-        var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
+    private static void ProcessingFixedByteEncoding(Stream stream,
+                                                    long position,
+                                                    int remaining,
+                                                    Span<byte> buffer,
+                                                    Action<long, ReadOnlySpan<CharData>> emitBatch,
+                                                    Action<ReadOnlySpan<byte>, long, Action<long, ReadOnlySpan<CharData>>> core)
+    {
+        int readBytes;
+        do
+        {
+            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+            readBytes = stream.Read(buf);
+            if (readBytes == 0)
+                break;
+            core(buf[..readBytes], position, emitBatch);
+            remaining -= readBytes;
+            position += readBytes;
+        }
+        while (remaining > 0);
 
+        emitBatch(-1, default);
+    }
+
+    private static void ProcessingUtf8(Stream stream,
+                                       long position,
+                                       int remaining,
+                                       Span<byte> buffer,
+                                       Action<long, ReadOnlySpan<CharData>> emitBatch)
+    {
+        var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
         ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
+
+        int readBytes;
         do
         {
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
@@ -299,30 +295,66 @@ public static partial class HexDumper
             if (readBytes == 0)
                 break;
 
-            HexDumpCore(buf[..(fbBytes.Length + readBytes)], encoding, fallbackBuffer, position, emitBatch);
+            HexDumpCoreUTF8(buf[..readBytes], position, emitBatch, fallbackBuffer);
             if (fallbackBuffer.HasFallbackChars)
-            {
                 fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
-            }
+
             remaining -= readBytes;
             position += readBytes;
         }
         while (remaining > 0);
 
-        if (!fbBytes.IsEmpty)
+        FlashFallbackBytes(fbBytes, position, emitBatch);
+    }
+
+    private static void ProcessGeneric(Stream stream,
+                                       long position,
+                                       int remaining,
+                                       Span<byte> buffer,
+                                       Action<long, ReadOnlySpan<CharData>> emitBatch,
+                                       Encoding originalEncoding)
+    {
+        var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
+        var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
+        ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
+
+        int readBytes;
+        do
         {
-            Span<CharData> batch = stackalloc CharData[4];
-            position -= fbBytes.Length;
-            for (var i = 0; i < fbBytes.Length; i++)
-            {
-                var b = fbBytes[i];
-                DebugPrint($"p={position + i:X8}: (Final) {b:X2}", ConsoleColor.Yellow);
-                batch[i] = new(b, (char)b, CharType.Binary);
-            }
-            emitBatch(position, batch[..fbBytes.Length]);
+            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+            fbBytes.CopyTo(buf);
+            readBytes = stream.Read(buf[fbBytes.Length..]);
+            if (readBytes == 0)
+                break;
+
+            HexDumpCore(buf[..readBytes], encoding, fallbackBuffer, position, emitBatch);
+            if (fallbackBuffer.HasFallbackChars)
+                fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
+
+            remaining -= readBytes;
+            position += readBytes;
+        }
+        while (remaining > 0);
+
+        FlashFallbackBytes(fbBytes, position, emitBatch);
+    }
+
+    private static void FlashFallbackBytes(ReadOnlySpan<byte> fbBytes, long position, Action<long, ReadOnlySpan<CharData>> emitBatch)
+    {
+        if (fbBytes.IsEmpty)
+        {
+            emitBatch(-1, default);
+            return;
         }
 
-        // end signal
+        Span<CharData> batch = stackalloc CharData[fbBytes.Length];
+        position -= fbBytes.Length;
+
+        for (int i = 0; i < fbBytes.Length; i++)
+        {
+            batch[i] = new(fbBytes[i], (char)fbBytes[i], CharType.Binary);
+        }
+        emitBatch(position, batch);
         emitBatch(-1, default);
     }
 
