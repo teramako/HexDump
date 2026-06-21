@@ -298,7 +298,7 @@ public static partial class HexDumper
         int readBytes, totalBytes;
         do
         {
-            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining + fbBytes.Length)];
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
                 break;
@@ -330,7 +330,7 @@ public static partial class HexDumper
         int readBytes, totalBytes;
         do
         {
-            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
+            var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining + fbBytes.Length)];
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
                 break;
