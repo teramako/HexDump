@@ -35,6 +35,17 @@ Describe 'HexDump' {
             $resultBytes = (Show-HexDump -Data $bytes -Encoding $Encoding).ListChars.B
             BytesToString $resultBytes | Should -BeExactly $data
         }
+
+        It 'handles fallback twice: <Encoding>' -ForEach @(
+            @{ Encoding = 'euc-jp' }
+            @{ Encoding = 'utf-8' }
+        ) {
+            $bytes = [byte[]]::new(1023) + @(0xF4,0x80)
+            $actual = BytesToString ($bytes | Select-Object -Last 17)
+
+            $resultBytes = (Show-HexDump -Data $bytes -Encoding $Encoding).ListChars.B | Select-Object -Last 17
+            BytesToString $resultBytes | Should -BeExactly $actual
+        }
     }
 }
 
