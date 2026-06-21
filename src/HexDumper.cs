@@ -299,22 +299,21 @@ public static partial class HexDumper
         do
         {
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
-            fbBytes.CopyTo(buf);
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
                 break;
 
+            fbBytes.CopyTo(buf);
             totalBytes = readBytes + fbBytes.Length;
             HexDumpCoreUTF8(buf[..totalBytes], position - fbBytes.Length, emitBatch, fallbackBuffer);
-            if (fallbackBuffer.HasFallbackChars)
-                fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
+            fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
 
-            remaining -= totalBytes;
-            position += totalBytes;
+            remaining -= readBytes;
+            position += readBytes;
         }
         while (remaining > 0);
 
-        FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), position, emitBatch);
+        FlashFallbackBytes(fbBytes, position, emitBatch);
     }
 
     private static void ProcessGeneric(Stream stream,
@@ -332,22 +331,21 @@ public static partial class HexDumper
         do
         {
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
-            fbBytes.CopyTo(buf);
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
                 break;
 
+            fbBytes.CopyTo(buf);
             totalBytes = readBytes + fbBytes.Length;
             HexDumpCore(buf[..totalBytes], encoding, fallbackBuffer, position - fbBytes.Length, emitBatch);
-            if (fallbackBuffer.HasFallbackChars)
-                fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
+            fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
 
-            remaining -= totalBytes;
-            position += totalBytes;
+            remaining -= readBytes;
+            position += readBytes;
         }
         while (remaining > 0);
 
-        FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), position, emitBatch);
+        FlashFallbackBytes(fbBytes, position, emitBatch);
     }
 
     private static void FlashFallbackBytes(ReadOnlySpan<byte> fbBytes, long position, Action<long, ReadOnlySpan<CharData>> emitBatch)
