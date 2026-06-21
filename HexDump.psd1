@@ -112,7 +112,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
+        ReleaseNotes = 'https://github.com/teramako/HexDump/releases'
 
         # Prerelease string of this module
         # Prerelease = ''
