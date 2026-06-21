@@ -308,8 +308,8 @@ public static partial class HexDumper
             HexDumpCoreUTF8(buf[..totalBytes], position - fbBytes.Length, emitBatch, fallbackBuffer);
             fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
 
-            remaining -= totalBytes;
-            position += totalBytes;
+            remaining -= readBytes;
+            position += readBytes;
         }
         while (remaining > 0);
 
@@ -340,8 +340,8 @@ public static partial class HexDumper
             HexDumpCore(buf[..totalBytes], encoding, fallbackBuffer, position - fbBytes.Length, emitBatch);
             fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
 
-            remaining -= totalBytes;
-            position += totalBytes;
+            remaining -= readBytes;
+            position += readBytes;
         }
         while (remaining > 0);
 
