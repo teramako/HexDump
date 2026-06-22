@@ -249,23 +249,21 @@ public static partial class HexDumper
         long position = offset;
         int remaining = length > 0 ? length : int.MaxValue;
 
-        Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
-
         try
         {
             switch (originalEncoding.CodePage)
             {
                 case 20127: // ASCII
-                    ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreAscii);
+                    ProcessingFixedByteEncoding(stream, position, remaining, emitBatch, HexDumpCoreAscii);
                     return;
                 case 28591: // Latin-1
-                    ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreLatin1);
+                    ProcessingFixedByteEncoding(stream, position, remaining, emitBatch, HexDumpCoreLatin1);
                     return;
                 case 65001: // UTF-8
-                    ProcessingUtf8(stream, position, remaining, buffer, emitBatch);
+                    ProcessingUtf8(stream, position, remaining, emitBatch);
                     return;
                 default:
-                    ProcessGeneric(stream, position, remaining, buffer, emitBatch, originalEncoding);
+                    ProcessGeneric(stream, position, remaining, emitBatch, originalEncoding);
                     return;
             }
         }
@@ -278,10 +276,10 @@ public static partial class HexDumper
     private static void ProcessingFixedByteEncoding(Stream stream,
                                                     long position,
                                                     int remaining,
-                                                    Span<byte> buffer,
                                                     Action<long, ReadOnlySpan<CharData>> emitBatch,
                                                     Action<ReadOnlySpan<byte>, long, Action<long, ReadOnlySpan<CharData>>> core)
     {
+        Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
         int readBytes;
         do
         {
@@ -299,12 +297,12 @@ public static partial class HexDumper
     private static void ProcessingUtf8(Stream stream,
                                        long position,
                                        int remaining,
-                                       Span<byte> buffer,
                                        Action<long, ReadOnlySpan<CharData>> emitBatch)
     {
         var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
         ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
 
+        Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
         int readBytes, totalBytes;
         do
         {
@@ -329,7 +327,6 @@ public static partial class HexDumper
     private static void ProcessGeneric(Stream stream,
                                        long position,
                                        int remaining,
-                                       Span<byte> buffer,
                                        Action<long, ReadOnlySpan<CharData>> emitBatch,
                                        Encoding originalEncoding)
     {
@@ -337,6 +334,7 @@ public static partial class HexDumper
         var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
         ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
 
+        Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
         int readBytes, totalBytes;
         do
         {
