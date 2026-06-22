@@ -11,7 +11,7 @@ param(
 )
 
 $ParnetDir = Join-Path -Path $PSScriptRoot -ChildPath .. -Resolve
-Import-Module (Join-Path -Path $ParnetDir -ChildPath HexDump.psd1)
+Import-Module (Join-Path -Path $ParnetDir -ChildPath HexDump.psd1) -ErrorAction SilentlyContinue
 Import-Module -Name Pester
 
 $conf = New-PesterConfiguration
