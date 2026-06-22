@@ -102,27 +102,32 @@ public static partial class HexDumper
                 ? data.Span.Slice((int)offset, length)
                 : data.Span.Slice((int)offset);
             DebugPrint($"All bytes = [{string.Join(' ', targetData.ToArray().Select(static b => $"{b:X2}"))}]", ConsoleColor.Green);
-            switch (encoding.CodePage)
+            try
             {
-                case 20127: // ASCII
-                    HexDumpCoreAscii(targetData, offset, EmitBatch);
-                    EmitBatch(-1, default);
-                    return;
-                case 28591: // Latin-1
-                    HexDumpCoreLatin1(targetData, offset, EmitBatch);
-                    EmitBatch(-1, default);
-                    return;
-                case 65001: // UTF-8
-                    var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
-                    HexDumpCoreUTF8(targetData, offset, EmitBatch, fallbackBuffer);
-                    FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
-                    return;
-                default:
-                    var newEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
-                    fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
-                    HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
-                    FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
-                    return;
+                switch (encoding.CodePage)
+                {
+                    case 20127: // ASCII
+                        HexDumpCoreAscii(targetData, offset, EmitBatch);
+                        return;
+                    case 28591: // Latin-1
+                        HexDumpCoreLatin1(targetData, offset, EmitBatch);
+                        return;
+                    case 65001: // UTF-8
+                        var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
+                        HexDumpCoreUTF8(targetData, offset, EmitBatch, fallbackBuffer);
+                        FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
+                        return;
+                    default:
+                        var newEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
+                        fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
+                        HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
+                        FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
+                        return;
+                }
+            }
+            finally
+            {
+                EmitBatch(-1, default);
             }
         }
     }
@@ -246,20 +251,27 @@ public static partial class HexDumper
 
         Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
 
-        switch (originalEncoding.CodePage)
+        try
         {
-            case 20127: // ASCII
-                ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreAscii);
-                return;
-            case 28591: // Latin-1
-                ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreLatin1);
-                return;
-            case 65001: // UTF-8
-                ProcessingUtf8(stream, position, remaining, buffer, emitBatch);
-                return;
-            default:
-                ProcessGeneric(stream, position, remaining, buffer, emitBatch, originalEncoding);
-                return;
+            switch (originalEncoding.CodePage)
+            {
+                case 20127: // ASCII
+                    ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreAscii);
+                    return;
+                case 28591: // Latin-1
+                    ProcessingFixedByteEncoding(stream, position, remaining, buffer, emitBatch, HexDumpCoreLatin1);
+                    return;
+                case 65001: // UTF-8
+                    ProcessingUtf8(stream, position, remaining, buffer, emitBatch);
+                    return;
+                default:
+                    ProcessGeneric(stream, position, remaining, buffer, emitBatch, originalEncoding);
+                    return;
+            }
+        }
+        finally
+        {
+            emitBatch(-1, default);
         }
     }
 
@@ -282,8 +294,6 @@ public static partial class HexDumper
             position += readBytes;
         }
         while (remaining > 0);
-
-        emitBatch(-1, default);
     }
 
     private static void ProcessingUtf8(Stream stream,
@@ -351,10 +361,7 @@ public static partial class HexDumper
     private static void FlashFallbackBytes(ReadOnlySpan<byte> fbBytes, long position, Action<long, ReadOnlySpan<CharData>> emitBatch)
     {
         if (fbBytes.IsEmpty)
-        {
-            emitBatch(-1, default);
             return;
-        }
 
         Span<CharData> batch = stackalloc CharData[fbBytes.Length];
         position -= fbBytes.Length;
@@ -365,7 +372,6 @@ public static partial class HexDumper
             DebugPrint($"p={position+i:X8}: (Fallback) {fbBytes[i]:X2}", ConsoleColor.Yellow);
         }
         emitBatch(position, batch);
-        emitBatch(-1, default);
     }
 
     private static void HexDumpCore(ReadOnlySpan<byte> data,
