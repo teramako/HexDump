@@ -53,6 +53,7 @@ public class ShowHexDumpCommand : PSCmdlet
     private AnonymousPipeServerStream? _server;
     private AnonymousPipeClientStream? _client;
     private Task? _readerTask;
+    private CancellationTokenSource _cts = new();
 
     private readonly ConcurrentQueue<CharCollectionRow> _queue = [];
     private readonly AutoResetEvent _queueEvent = new(false);
@@ -85,11 +86,11 @@ public class ShowHexDumpCommand : PSCmdlet
             case DataParameterSet:
                 _server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None);
                 _client = new AnonymousPipeClientStream(PipeDirection.In, _server.ClientSafePipeHandle);
-                _readerTask = Task.Run(() => HexDumpReader(_client));
+                _readerTask = Task.Run(() => HexDumpReader(_client, _cts.Token));
                 break;
             case PathParameterSet:
                 _fs = File.OpenRead(Path);
-                _readerTask = Task.Run(() => HexDumpReader(_fs));
+                _readerTask = Task.Run(() => HexDumpReader(_fs, _cts.Token));
                 break;
             default:
                 throw new InvalidOperationException();
@@ -97,9 +98,9 @@ public class ShowHexDumpCommand : PSCmdlet
         }
     }
 
-    private void HexDumpReader(Stream stream)
+    private void HexDumpReader(Stream stream, CancellationToken cancellationToken= default)
     {
-        foreach (var row in HexDumper.HexDump(stream, _newConfig, Offset, Length))
+        foreach (var row in HexDumper.HexDump(stream, _newConfig, Offset, Length, cancellationToken))
         {
             _queue.Enqueue(row);
             _queueEvent.Set();
@@ -114,6 +115,19 @@ public class ShowHexDumpCommand : PSCmdlet
         if (ParameterSetName is DataParameterSet && _server is not null)
         {
             _server.Write(Data, 0, Data.Length);
+        }
+    }
+
+    protected override void StopProcessing()
+    {
+        try
+        {
+            _cts.Cancel();
+        }
+        finally
+        {
+            _server?.Dispose();
+            _fs?.Dispose();
         }
     }
 
