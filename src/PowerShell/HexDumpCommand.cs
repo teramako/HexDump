@@ -49,6 +49,7 @@ public class ShowHexDumpCommand : PSCmdlet
 
     private Config _newConfig = Config.Default;
 
+    private FileStream? _fs;
     private AnonymousPipeServerStream? _server;
     private AnonymousPipeClientStream? _client;
     private Task? _readerTask;
@@ -79,11 +80,20 @@ public class ShowHexDumpCommand : PSCmdlet
             _ => row => new SplitView(row)
         };
 
-        if (ParameterSetName is DataParameterSet)
+        switch (ParameterSetName)
         {
-            _server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None);
-            _client = new AnonymousPipeClientStream(PipeDirection.In, _server.ClientSafePipeHandle);
-            _readerTask = Task.Run(() => HexDumpReader(_client));
+            case DataParameterSet:
+                _server = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.None);
+                _client = new AnonymousPipeClientStream(PipeDirection.In, _server.ClientSafePipeHandle);
+                _readerTask = Task.Run(() => HexDumpReader(_client));
+                break;
+            case PathParameterSet:
+                _fs = File.OpenRead(Path);
+                _readerTask = Task.Run(() => HexDumpReader(_fs));
+                break;
+            default:
+                throw new InvalidOperationException();
+
         }
     }
 
@@ -109,34 +119,46 @@ public class ShowHexDumpCommand : PSCmdlet
 
     protected override void EndProcessing()
     {
-        if (ParameterSetName is DataParameterSet)
+        switch (ParameterSetName)
         {
-            _server?.Dispose();
-            _readerTask?.Wait();
-
-            while (!_readerCompleted || !_queue.IsEmpty)
-            {
-                while (_queue.TryDequeue(out var row))
-                {
-                    WriteObject(_createView(row));
-                }
-
-                if (!_readerCompleted)
-                {
-                    _queueEvent.WaitOne();
-                }
-            }
-            return;
+            case DataParameterSet:
+                DataProcessing();
+                break;
+            case PathParameterSet:
+                PathProcessing();
+                break;
+            default:
+                throw new InvalidOperationException();
         }
+    }
 
-        if (ParameterSetName is PathParameterSet)
+    private void FlushQueueAndWait()
+    {
+        while (!_readerCompleted || !_queue.IsEmpty)
         {
-            using var fs = File.OpenRead(Path);
-            foreach (var row in HexDumper.HexDump(fs, _newConfig, Offset, Length))
+            while (_queue.TryDequeue(out var row))
             {
                 WriteObject(_createView(row));
             }
-            return;
+
+            if (!_readerCompleted)
+            {
+                _queueEvent.WaitOne();
+            }
         }
+
+        _readerTask?.Wait();
+    }
+
+    private void DataProcessing()
+    {
+        _server?.Dispose();
+        FlushQueueAndWait();
+    }
+
+    private void PathProcessing()
+    {
+        FlushQueueAndWait();
+        _fs?.Dispose();
     }
 }
