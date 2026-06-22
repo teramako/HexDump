@@ -144,12 +144,13 @@ public static partial class HexDumper
                                                          Encoding encoding,
                                                          long offset = 0,
                                                          int length = 0,
-                                                         ColorType colorType = ColorType.None)
+                                                         ColorType colorType = ColorType.None,
+                                                         CancellationToken cancellationToken = default)
     {
         Config config = (Config)Config.Default.Clone();
         config.Encoding = encoding;
         config.ColorType = colorType;
-        return HexDump(stream, config, offset, length);
+        return HexDump(stream, config, offset, length, cancellationToken);
     }
 
     /// <inheritdoc cref="HexDump(Stream, Encoding, long, int, ColorType)"/>
@@ -157,7 +158,8 @@ public static partial class HexDumper
     public static IEnumerable<CharCollectionRow> HexDump(Stream stream,
                                                          Config config,
                                                          long offset = 0,
-                                                         int length = 0)
+                                                         int length = 0,
+                                                         CancellationToken cancellationToken = default)
     {
         long position = offset;
         var encoding = Encoding.GetEncoding(config.Encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
@@ -168,7 +170,7 @@ public static partial class HexDumper
         AutoResetEvent rowEvent = new(false);
         bool completed = false;
 
-        var dumpTask = AsyncHexDumpStream(stream, config.Encoding, EmitBatch, offset, length);
+        var dumpTask = AsyncHexDumpStream(stream, config.Encoding, EmitBatch, offset, length, cancellationToken);
 
         while (!(completed && rowQueue.IsEmpty))
         {
@@ -241,7 +243,8 @@ public static partial class HexDumper
                                                 Encoding originalEncoding,
                                                 Action<long, ReadOnlySpan<CharData>> emitBatch,
                                                 long offset = 0,
-                                                int length = 0)
+                                                int length = 0,
+                                                CancellationToken cancellationToken = default)
     {
         if (offset > 0)
             Seek(stream, offset);
@@ -254,16 +257,35 @@ public static partial class HexDumper
             switch (originalEncoding.CodePage)
             {
                 case 20127: // ASCII
-                    ProcessingFixedByteEncoding(stream, position, remaining, emitBatch, HexDumpCoreAscii);
+                    ProcessingFixedByteEncoding(stream,
+                                                position,
+                                                remaining,
+                                                emitBatch,
+                                                HexDumpCoreAscii,
+                                                cancellationToken);
                     return;
                 case 28591: // Latin-1
-                    ProcessingFixedByteEncoding(stream, position, remaining, emitBatch, HexDumpCoreLatin1);
+                    ProcessingFixedByteEncoding(stream,
+                                                position,
+                                                remaining,
+                                                emitBatch,
+                                                HexDumpCoreLatin1,
+                                                cancellationToken);
                     return;
                 case 65001: // UTF-8
-                    ProcessingUtf8(stream, position, remaining, emitBatch);
+                    ProcessingUtf8(stream,
+                                   position,
+                                   remaining,
+                                   emitBatch,
+                                   cancellationToken);
                     return;
                 default:
-                    ProcessGeneric(stream, position, remaining, emitBatch, originalEncoding);
+                    ProcessGeneric(stream,
+                                   position,
+                                   remaining,
+                                   emitBatch,
+                                   originalEncoding,
+                                   cancellationToken);
                     return;
             }
         }
@@ -277,12 +299,16 @@ public static partial class HexDumper
                                                     long position,
                                                     int remaining,
                                                     Action<long, ReadOnlySpan<CharData>> emitBatch,
-                                                    Action<ReadOnlySpan<byte>, long, Action<long, ReadOnlySpan<CharData>>> core)
+                                                    Action<ReadOnlySpan<byte>, long, Action<long, ReadOnlySpan<CharData>>> core,
+                                                    CancellationToken cancellationToken = default)
     {
         Span<byte> buffer = stackalloc byte[BUFFER_LENGTH];
         int readBytes;
         do
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining)];
             readBytes = stream.Read(buf);
             if (readBytes == 0)
@@ -297,7 +323,8 @@ public static partial class HexDumper
     private static void ProcessingUtf8(Stream stream,
                                        long position,
                                        int remaining,
-                                       Action<long, ReadOnlySpan<CharData>> emitBatch)
+                                       Action<long, ReadOnlySpan<CharData>> emitBatch,
+                                       CancellationToken cancellationToken = default)
     {
         var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
         ReadOnlySpan<byte> fbBytes = ReadOnlySpan<byte>.Empty;
@@ -306,6 +333,9 @@ public static partial class HexDumper
         int readBytes, totalBytes;
         do
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining + fbBytes.Length)];
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
@@ -328,7 +358,8 @@ public static partial class HexDumper
                                        long position,
                                        int remaining,
                                        Action<long, ReadOnlySpan<CharData>> emitBatch,
-                                       Encoding originalEncoding)
+                                       Encoding originalEncoding,
+                                       CancellationToken cancellationToken = default)
     {
         var encoding = Encoding.GetEncoding(originalEncoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
         var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
@@ -338,6 +369,9 @@ public static partial class HexDumper
         int readBytes, totalBytes;
         do
         {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
             var buf = buffer[..Math.Min(BUFFER_LENGTH, remaining + fbBytes.Length)];
             readBytes = stream.Read(buf[fbBytes.Length..]);
             if (readBytes == 0)
