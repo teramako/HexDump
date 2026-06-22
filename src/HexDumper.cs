@@ -115,13 +115,13 @@ public static partial class HexDumper
                 case 65001: // UTF-8
                     var fallbackBuffer = new TopBytesFallback.TopByteFallbackBuffer();
                     HexDumpCoreUTF8(targetData, offset, EmitBatch, fallbackBuffer);
-                    FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), targetData.Length, EmitBatch);
+                    FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
                     return;
                 default:
                     var newEncoding = Encoding.GetEncoding(encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
                     fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
                     HexDumpCore(targetData, encoding, fallbackBuffer, offset, EmitBatch);
-                    FlashFallbackBytes(fallbackBuffer.GetFallbackBytes().ToArray(), targetData.Length, EmitBatch);
+                    FlashFallbackBytes(fallbackBuffer.DrainFallbackBytes(), targetData.Length, EmitBatch);
                     return;
             }
         }
@@ -306,7 +306,7 @@ public static partial class HexDumper
             fbBytes.CopyTo(buf);
             totalBytes = readBytes + fbBytes.Length;
             HexDumpCoreUTF8(buf[..totalBytes], position - fbBytes.Length, emitBatch, fallbackBuffer);
-            fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
+            fbBytes = fallbackBuffer.DrainFallbackBytes();
 
             remaining -= readBytes;
             position += readBytes;
@@ -338,7 +338,7 @@ public static partial class HexDumper
             fbBytes.CopyTo(buf);
             totalBytes = readBytes + fbBytes.Length;
             HexDumpCore(buf[..totalBytes], encoding, fallbackBuffer, position - fbBytes.Length, emitBatch);
-            fbBytes = fallbackBuffer.GetFallbackBytes().ToArray();
+            fbBytes = fallbackBuffer.DrainFallbackBytes();
 
             remaining -= readBytes;
             position += readBytes;
@@ -421,10 +421,12 @@ public static partial class HexDumper
                     return;
                 }
 
-                foreach (var fbByte in fallbackBuffer.GetFallbackBytes())
+                var fbBytes = fallbackBuffer.DrainFallbackBytes();
+                for (; byteIndex < fbBytes.Length; byteIndex++)
                 {
+                    byte fbByte = fbBytes[byteIndex];
                     DebugPrint($"p={pos+byteIndex:X8}: (Fallback) {fbByte:X2}", ConsoleColor.Yellow);
-                    batch[byteIndex++] = new(fbByte, (char)fbByte, CharType.Binary);
+                    batch[byteIndex] = new(fbByte, (char)fbByte, CharType.Binary);
                 }
                 emitBatch(globalPosition, batch[..byteIndex]);
                 pos += byteIndex;

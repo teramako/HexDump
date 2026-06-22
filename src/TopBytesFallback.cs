@@ -37,32 +37,21 @@ internal class TopBytesFallback : DecoderFallback
     /// <inheritdoc cref="TopBytesFallback"/>
     internal class TopByteFallbackBuffer : DecoderFallbackBuffer
     {
-        private ByteRingBuffer _buffer = new();
+        private byte[] _buffer = new byte[4];
 
-        /// <inheritdoc/>
-        public override int Remaining => _buffer.Count;
+        private int _count;
+
+        public override int Remaining => _count;
 
         public override void Reset()
         {
-            _buffer.Clear();
+            _count = 0;
         }
 
         /// <summary>
         /// Indicates whether fallback bytes are stored.
         /// </summary>
-        public bool HasFallbackChars => _buffer.HasData;
-
-        /// <summary>
-        /// Returns the stored fallback bytes.
-        /// </summary>
-        public IEnumerable<byte> GetFallbackBytes()
-        {
-            while (_buffer.TryDequeue(out byte b))
-            {
-                yield return b;
-            }
-            Reset();
-        }
+        public bool HasFallbackChars => _count > 0;
 
         /// <summary>
         /// Stores the fallback bytes only when <paramref name="index"/> is a
@@ -75,13 +64,12 @@ internal class TopBytesFallback : DecoderFallback
         /// <inheritdoc/>
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
-            if (index == _buffer.Count)
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index + bytesUnknown.Length, 4);
+            if (index == _count)
             {
                 HexDumper.DebugPrint($"Store buffer[{index}]: [{string.Join(' ', bytesUnknown.Select(static b => $"{b:X2}"))}]");
-                foreach (byte b in bytesUnknown)
-                {
-                    _buffer.Enqueue(b);
-                }
+                bytesUnknown.CopyTo(_buffer, index);
+                _count = index + bytesUnknown.Length;
             }
             return false;
         }
@@ -90,11 +78,25 @@ internal class TopBytesFallback : DecoderFallback
         {
             // `index` indicates "where the fallback began in `bytesUnknown`"
             // Since `TopBytesFallback` always retains all bytes, `index` can be ignored
-            for (var i = 0; i < bytesUnknown.Length; i++)
-            {
-                _buffer.Enqueue(bytesUnknown[i]);
-            }
+            HexDumper.DebugPrint($"Store span: [{string.Join(' ', bytesUnknown.ToArray().Select(static b => $"{b:X2}"))}]");
+            bytesUnknown.CopyTo(_buffer);
+            _count = bytesUnknown.Length;
             return false;
+        }
+
+        /// <summary>
+        /// Returns the stored fallback bytes and resets the count to 0.
+        /// </summary>
+        public ReadOnlySpan<byte> DrainFallbackBytes()
+        {
+            try
+            {
+                return _buffer.AsSpan(0, _count);
+            }
+            finally
+            {
+                Reset();
+            }
         }
 
         /// <remarks>
@@ -113,53 +115,6 @@ internal class TopBytesFallback : DecoderFallback
         public override bool MovePrevious()
         {
             throw new NotImplementedException();
-        }
-    }
-
-    internal sealed class ByteRingBuffer
-    {
-        private readonly byte[] _buffer = new byte[4];
-        private int _head = 0;
-        private int _tail = 0;
-        private int _count = 0;
-
-        public int Count => _count;
-        public bool HasData => _count > 0;
-
-        public void Clear()
-        {
-            _head = _tail = _count = 0;
-        }
-
-        public void Enqueue(byte b)
-        {
-            if (_count == 4)
-                throw new InvalidOperationException("RingBuffer overflow");
-
-            _buffer[_tail] = b;
-            _tail = (_tail + 1) & 3; // %4 の高速化
-            _count++;
-        }
-
-        public bool TryDequeue(out byte b)
-        {
-            if (_count == 0)
-            {
-                b = default;
-                return false;
-            }
-            b = _buffer[_head];
-            _head = (_head + 1) & 3;
-            _count--;
-            return true;
-        }
-
-        public IEnumerable<byte> Drain()
-        {
-            while (TryDequeue(out var b))
-            {
-                yield return b;
-            }
         }
     }
 }
