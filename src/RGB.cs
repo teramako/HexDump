@@ -3,18 +3,8 @@ namespace MT.HexDump;
 /// <summary>
 /// RGB カラー構造体
 /// </summary>
-public record struct RGB
+public readonly record struct RGB(byte R, byte G, byte B)
 {
-    public byte R;
-    public byte G;
-    public byte B;
-    public RGB(byte r, byte g, byte b)
-    {
-        R = r;
-        G = g;
-        B = b;
-    }
-
     /// <summary>
     /// HLS パラメータから <see cref="RGB"/> を返す
     /// </summary>
