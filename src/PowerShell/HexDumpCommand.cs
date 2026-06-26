@@ -149,7 +149,16 @@ public class ShowHexDumpCommand : PSCmdlet
             WriteObject(_createView(row));
         }
 
-        _readerTask?.Wait(_cts.Token);
+        try
+        {
+            _readerTask?.Wait(_cts.Token);
+        }
+        catch (AggregateException ex)
+        {
+            if (ex.InnerException is not null)
+                throw ex.InnerException;
+            throw;
+        }
     }
 
     private void DataProcessing()
