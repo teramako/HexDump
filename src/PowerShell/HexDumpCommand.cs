@@ -55,9 +55,7 @@ public class ShowHexDumpCommand : PSCmdlet
     private Task? _readerTask;
     private CancellationTokenSource _cts = new();
 
-    private readonly ConcurrentQueue<CharCollectionRow> _queue = [];
-    private readonly AutoResetEvent _queueEvent = new(false);
-    private volatile bool _readerCompleted = false;
+    private readonly BlockingCollection<CharCollectionRow> _output = new(256);
 
     private Func<CharCollectionRow, RowView> _createView = null!;
 
@@ -98,16 +96,14 @@ public class ShowHexDumpCommand : PSCmdlet
         }
     }
 
-    private void HexDumpReader(Stream stream, CancellationToken cancellationToken= default)
+    private void HexDumpReader(Stream stream, CancellationToken cancellationToken = default)
     {
         foreach (var row in HexDumper.HexDump(stream, _newConfig, Offset, Length, cancellationToken))
         {
-            _queue.Enqueue(row);
-            _queueEvent.Set();
+            _output.Add(row, cancellationToken);
         }
 
-        _readerCompleted = true;
-        _queueEvent.Set();
+        _output.CompleteAdding();
     }
 
     protected override void ProcessRecord()
@@ -148,20 +144,12 @@ public class ShowHexDumpCommand : PSCmdlet
 
     private void FlushQueueAndWait()
     {
-        while (!_readerCompleted || !_queue.IsEmpty)
+        foreach (var row in _output.GetConsumingEnumerable(_cts.Token))
         {
-            while (_queue.TryDequeue(out var row))
-            {
-                WriteObject(_createView(row));
-            }
-
-            if (!_readerCompleted)
-            {
-                _queueEvent.WaitOne();
-            }
+            WriteObject(_createView(row));
         }
 
-        _readerTask?.Wait();
+        _readerTask?.Wait(_cts.Token);
     }
 
     private void DataProcessing()
