@@ -62,7 +62,7 @@ public static partial class HexDumper
 
         BlockingCollection<CharData> charCollection = [];
 
-        var dumpTask = Task.Run(DumpTask);
+        var dumpTask = DumpTask();
 
         foreach (var charData in charCollection.GetConsumingEnumerable())
         {
@@ -84,7 +84,7 @@ public static partial class HexDumper
             }
         }
 
-        void DumpTask()
+        async Task DumpTask()
         {
             var targetData = length > 0 && data.Length > offset + length
                 ? data.Span.Slice((int)offset, length)
