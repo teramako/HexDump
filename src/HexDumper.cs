@@ -60,24 +60,13 @@ public static partial class HexDumper
         var encoding = Encoding.GetEncoding(config.Encoding.CodePage, EncoderFallback.ReplacementFallback, new TopBytesFallback());
         var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
 
-        ConcurrentQueue<CharData> charDataQueue = [];
-        AutoResetEvent queueEvent = new(false);
-        bool completed = false;
+        BlockingCollection<CharData> charCollection = [];
 
+        var dumpTask = DumpTask();
 
-        var dumpTask = Task.Run(DumpTask);
-
-        while (!(completed && charDataQueue.IsEmpty))
+        foreach (var charData in charCollection.GetConsumingEnumerable())
         {
-            while (charDataQueue.TryDequeue(out var charData))
-            {
-                yield return charData;
-            }
-
-            if (completed)
-                break;
-            else
-                queueEvent.WaitOne();
+            yield return charData;
         }
 
         dumpTask.Wait();
@@ -86,17 +75,16 @@ public static partial class HexDumper
         {
             if (p < 0)
             {
-                queueEvent.Set();
-                completed = true;
+                charCollection.CompleteAdding();
                 return;
             }
             for (int i = 0; i < batch.Length; i++)
             {
-                charDataQueue.Enqueue(batch[i]);
+                charCollection.Add(batch[i]);
             }
-            queueEvent.Set();
         }
-        void DumpTask()
+
+        async Task DumpTask()
         {
             var targetData = length > 0 && data.Length > offset + length
                 ? data.Span.Slice((int)offset, length)
@@ -166,25 +154,13 @@ public static partial class HexDumper
         var fallbackBuffer = ((TopBytesFallback)encoding.DecoderFallback).FallbackBuffer;
         CharCollectionRow charDatas = new(position, config);
 
-        ConcurrentQueue<CharCollectionRow> rowQueue = [];
-        AutoResetEvent rowEvent = new(false);
-        bool completed = false;
+        BlockingCollection<CharCollectionRow> rowCollection = [];
 
         var dumpTask = AsyncHexDumpStream(stream, config.Encoding, EmitBatch, offset, length, cancellationToken);
 
-        while (!(completed && rowQueue.IsEmpty))
+        foreach (var row in rowCollection.GetConsumingEnumerable(cancellationToken))
         {
-            while (rowQueue.TryDequeue(out var row))
-            {
-                if (row.IsEmpty)
-                    yield break;
-                yield return row;
-            }
-
-            if (completed)
-                break;
-            else
-                rowEvent.WaitOne();
+            yield return row;
         }
 
         dumpTask.Wait();
@@ -193,9 +169,9 @@ public static partial class HexDumper
         {
             if (p < 0)
             {
-                rowQueue.Enqueue(charDatas);
-                rowEvent.Set();
-                completed = true;
+                if (!charDatas.IsEmpty)
+                    rowCollection.Add(charDatas);
+                rowCollection.CompleteAdding();
                 return;
             }
             for (var i = 0; i < batch.Length; i++)
@@ -204,8 +180,7 @@ public static partial class HexDumper
                 charDatas.Set(pos, batch[i]);
                 if ((pos & 0x0F) == 0x0F)
                 {
-                    rowQueue.Enqueue(charDatas);
-                    rowEvent.Set();
+                    rowCollection.Add(charDatas);
                     charDatas = new(pos + 1, config);
                 }
             }
